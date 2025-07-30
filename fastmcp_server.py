@@ -60,7 +60,11 @@ def setup_webdriver(max_retries=3, retry_delay=2):
                 service = Service(chromedriver_path)
                 driver = webdriver.Chrome(service=service, options=chrome_options)
             else:
-                logger.info("No ChromeDriver found, falling back to Selenium Manager")
+                logger.info(
+                    f"ChromeDriver not found at {chromedriver_path}. "
+                    "Falling back to Selenium Manager"
+                )
+
                 driver = webdriver.Chrome(options=chrome_options)
 
             logger.info("Successfully created ChromeDriver instance")
@@ -260,7 +264,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
         
     except Exception as e:
         logger.error(f"Error capturing heatmap: {e}")
-        return None
+        raise RuntimeError(f"Error capturing heatmap: {e}")
     finally:
         if driver:
             driver.quit()
@@ -287,10 +291,13 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
     
     # Get the heatmap image
-    image_data = await capture_coinglass_heatmap(symbol, timeframe)
-    
+    try:
+        image_data = await capture_coinglass_heatmap(symbol, timeframe)
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
+
     if not image_data:
-        raise Exception("Failed to generate liquidation map")
+        raise RuntimeError("Failed to generate liquidation map: no image data")
     
     # Convert image to base64
     image_base64 = base64.b64encode(image_data).decode('utf-8')

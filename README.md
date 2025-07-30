@@ -166,6 +166,9 @@ Run the test suite to verify functionality:
 python test_mcp_server.py
 ```
 
+The tests that capture screenshots require ChromeDriver. If the executable is not
+found at the path specified by `CHROMEDRIVER_PATH`, those tests will be skipped.
+
 The test suite includes:
 - Basic server functionality tests
 - Tool execution tests for both 12-hour and 24-hour timeframes
