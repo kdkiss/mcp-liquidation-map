@@ -162,12 +162,37 @@ async def handle_jsonrpc(request: JSONRPCRequest):
         )
 
 # MCP Handlers
-async def handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
+async def handle_initialize():
     """Handle initialize method"""
     return {
-        "name": "liquidation-map-mcp",
-        "description": "MCP server for cryptocurrency liquidation heatmaps",
-        "version": "0.1.0"
+        "protocolVersion": "1.0",
+        "serverInfo": {
+            "name": "Liquidation Map MCP Server",
+            "description": "MCP server for generating and serving cryptocurrency liquidation heatmaps",
+            "version": "1.0.0"
+        },
+        "capabilities": {
+            "tools": {
+                "get_liquidation_map": {
+                    "description": "Get a liquidation heatmap for a cryptocurrency",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "symbol": {
+                                "type": "string",
+                                "description": "Cryptocurrency symbol (e.g., BTC, ETH)"
+                            },
+                            "timeframe": {
+                                "type": "string",
+                                "description": "Timeframe for the liquidation map (e.g., '24 hour', '12 hour')",
+                                "pattern": "^\\d+\\s+(minute|hour|day|week|month)$"
+                            }
+                        },
+                        "required": ["symbol", "timeframe"]
+                    }
+                }
+            }
+        }
     }
 
 async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
