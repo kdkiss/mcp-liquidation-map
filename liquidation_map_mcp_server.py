@@ -156,142 +156,67 @@ class LiquidationMapMCPServer:
         """
         driver = None
         try:
-            logger.info(f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe")
-            driver = self.setup_webdriver()
-            
-            # Navigate to Coinglass liquidation page
-            driver.get("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
-            wait = WebDriverWait(driver, 20)
-            
-            # Optimize page for screenshot
-            driver.execute_script("""
-                var style = document.createElement('style');
-                style.innerHTML = `
-                    * {
-                        transition: none !important;
-                        animation: none !important;
-                    }
-                    .echarts-for-react {
-                        width: 100% !important;
-                        height: 100% !important;
-                    }
-                    canvas {
-                        image-rendering: -webkit-optimize-contrast !important;
-                        image-rendering: crisp-edges !important;
-                    }
-                `;
-                document.head.appendChild(style);
-                window.devicePixelRatio = 2;
-            """)
-            
-            # Wait for page to load
-            time.sleep(5)
-            
-            # Use JavaScript to force symbol change
-            if symbol != "BTC":
-                try:
-                    # Click Symbol tab first
-                    symbol_tab = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@role='tab' and contains(text(), 'Symbol')]")))
-                    symbol_tab.click()
-                    time.sleep(2)
-                    logger.info("Clicked Symbol tab")
-                    
-                    # Use actual user simulation instead of JavaScript
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    
-                    # Find the input element
-                    input_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input.MuiAutocomplete-input")))
-                    
-                    # Clear the input by selecting all and typing
-                    actions = ActionChains(driver)
-                    actions.click(input_element)
-                    actions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL)
-                    actions.send_keys(symbol)
-                    actions.perform()
-                    
-                    time.sleep(2)
-                    logger.info(f"Typed {symbol} into input field")
-                    
-                    # Try to click on dropdown option or press Enter
+            logger.info(
+                f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
+            )
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080}, device_scale_factor=2
+                )
+                page = await context.new_page()
+
+                await page.goto(
+                    "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
+                    timeout=60000,
+                )
+
+                await page.add_style_tag(
+                    content="""
+                    * { transition: none !important; animation: none !important; }
+                    .echarts-for-react { width: 100% !important; height: 100% !important; }
+                    canvas { image-rendering: -webkit-optimize-contrast !important; image-rendering: crisp-edges !important; }
+                    """
+                )
+
+                await page.wait_for_load_state("networkidle")
+
+                if symbol != "BTC":
                     try:
-                        # Wait for dropdown to appear and click option
-                        option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option' and text()='{symbol}']")))
-                        option.click()
-                        logger.info(f"Clicked {symbol} option from dropdown")
-                    except:
-                        # Fallback: press Enter
-                        actions = ActionChains(driver)
-                        actions.send_keys(Keys.ENTER)
-                        actions.perform()
-                        logger.info(f"Pressed Enter to select {symbol}")
-                    
-                    # Wait for chart to update
-                    time.sleep(15)
-                    logger.info(f"Waited for chart to update with {symbol} data")
-                    
-                except Exception as symbol_e:
-                    logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
-            else:
-                logger.info("Using default BTC symbol")
-            
-            # Find and click the time period dropdown button
-            time_dropdown = wait.until(EC.element_to_be_clickable((
-                By.CSS_SELECTOR, "div.MuiSelect-root button.MuiSelect-button"
-            )))
-            
-            if time_dropdown.text.strip() != time_period:
-                time_dropdown.click()
-                time.sleep(2)
-                
-                driver.execute_script(f"""
-                    var options = document.querySelectorAll('li[role="option"]');
-                    for(var i = 0; i < options.length; i++) {{
-                        if(options[i].textContent.includes('{time_period}')) {{
-                            options[i].click();
-                            break;
-                        }}
-                    }}
-                """)
-                time.sleep(3)
-            
-            # Find and capture the chart
-            try:
-                heatmap_container = wait.until(EC.presence_of_element_located((
-                    By.CSS_SELECTOR, "div.echarts-for-react"
-                )))
-            except Exception:
-                heatmap_container = wait.until(EC.presence_of_element_located((
-                    By.XPATH, "//div[contains(@class, 'echarts-for-react')]"
-                )))
-            
-            time.sleep(3)
-            
-            rect = driver.execute_script("""
-                var rect = arguments[0].getBoundingClientRect();
-                return {
-                    x: rect.left,
-                    y: rect.top,
-                    width: rect.width,
-                    height: rect.height
-                };
-            """, heatmap_container)
-            
-            # Capture screenshot with CDP
-            result = driver.execute_cdp_cmd('Page.captureScreenshot', {
-                'clip': {
-                    'x': rect['x'],
-                    'y': rect['y'],
-                    'width': rect['width'],
-                    'height': rect['height'],
-                    'scale': 2
-                },
-                'captureBeyondViewport': True,
-                'fromSurface': True
-            })
-            
-            png_data = base64.b64decode(result['data'])
-            return png_data
-            
+                        await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
+                        await page.wait_for_selector("input.MuiAutocomplete-input")
+                        await page.fill("input.MuiAutocomplete-input", symbol)
+                        try:
+                            await page.click(
+                                f"//li[@role='option' and text()='{symbol}']",
+                                timeout=5000,
+                            )
+                        except Exception:
+                            await page.keyboard.press("Enter")
+                        await page.wait_for_load_state("networkidle")
+                    except Exception as symbol_e:
+                        logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
+
+                current_time = (
+                    await page.inner_text("div.MuiSelect-root button.MuiSelect-button")
+                ).strip()
+                if current_time != time_period:
+                    await page.click("div.MuiSelect-root button.MuiSelect-button")
+                    await page.wait_for_selector("li[role='option']")
+                    await page.click(
+                        f"//li[@role='option' and contains(text(), '{time_period}')]",
+                    )
+                    await page.wait_for_load_state("networkidle")
+
+                heatmap = await page.wait_for_selector("div.echarts-for-react")
+                box = await heatmap.bounding_box()
+
+                png_data = await page.screenshot(clip=box, type="png")
+
+                await browser.close()
+                return png_data
+
+
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
             return None

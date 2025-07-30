@@ -96,9 +96,9 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
             if symbol != "BTC":
                 try:
                     await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_selector("input.MuiAutocomplete-input")
                     await page.fill("input.MuiAutocomplete-input", symbol)
-                    await page.wait_for_timeout(2000)
+
                     try:
                         await page.click(
                             f"//li[@role='option' and text()='{symbol}']",
