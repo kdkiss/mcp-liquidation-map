@@ -106,6 +106,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                 await page.wait_for_timeout(2000)
                 await page.click(
                     f"//li[@role='option' and contains(text(), '{time_period}')]"
+
                 )
                 await page.wait_for_timeout(3000)
     
