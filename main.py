@@ -51,17 +51,27 @@ class ResourceInfo(BaseModel):
     description: str
     type: str
 
-# Initialize FastAPI app
-app = FastAPI(title="Liquidation Map MCP Server")
+# Create FastAPI app
+app = FastAPI(title="Liquidation Map MCP Server", version="1.0.0")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create sub-application for MCP endpoints
+mcp_app = FastAPI()
+
+# Add CORS middleware to both apps
+for _app in [app, mcp_app]:
+    _app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+# Mount MCP app at /mcp
+app.mount("/mcp", mcp_app)
+
+# For backward compatibility, also include the endpoints on the root path
+jsonrpc_app = app
 
 # Tool definitions
 TOOLS = {
@@ -91,7 +101,8 @@ TOOLS = {
 }
 
 # MCP Endpoints
-@app.post("/")
+@mcp_app.post("/")
+@app.post("/")  # Keep for backward compatibility
 async def handle_jsonrpc(request: JSONRPCRequest):
     """Handle JSON-RPC 2.0 requests"""
     if request.jsonrpc != "2.0":
@@ -426,19 +437,20 @@ async def get_liquidation_map_handler(args: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 @app.get("/health")
+@mcp_app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "ok"}
 
 # Legacy endpoint for backward compatibility
-@app.post("/get-liquidation-map")
-async def legacy_get_liquidation_map(request: Request):
+@app.get("/get-liquidation-map")
+@mcp_app.get("/get-liquidation-map")
+async def legacy_get_liquidation_map(
+    symbol: str = Query(..., regex="^[A-Za-z0-9-]+$"),
+    timeframe: str = Query(..., regex="^[0-9]+ (minute|hour|day|week|month)$")
+):
     """Legacy endpoint for backward compatibility"""
     try:
-        data = await request.json()
-        symbol = data.get("symbol", "BTC").upper()
-        timeframe = data.get("timeframe", "24 hour").lower()
-        
         image_data = await capture_coinglass_heatmap(symbol, timeframe)
         if not image_data:
             raise HTTPException(status_code=500, detail="Failed to generate liquidation map")
