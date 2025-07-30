@@ -458,10 +458,11 @@ async def legacy_get_liquidation_map(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting Liquidation Map MCP Server...")
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"Starting Liquidation Map MCP Server on port {port}...")
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=port,
         log_level="info"
     )
