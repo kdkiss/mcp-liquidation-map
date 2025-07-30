@@ -20,8 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastMCP server
-mcp = FastMCP("Liquidation Map Server", connection_types={"stdio": {}})
+# No server is created at import time to keep initialization lightweight
+mcp: FastMCP | None = None
 
 
 
@@ -135,9 +135,9 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
         logger.error(f"Error capturing heatmap: {e}")
         raise RuntimeError(f"Error capturing heatmap: {e}")
 
-@mcp.tool()
-async def get_liquidation_map(symbol: str, timeframe: str, ctx: Context) -> dict:
-    await ctx.report_progress(progress=0, total=100, message="Launching browser")
+
+async def get_liquidation_map(symbol: str, timeframe: str) -> str:
+>>>>>> main
     """
     Get a liquidation heatmap for a cryptocurrency.
     
@@ -183,11 +183,19 @@ async def get_liquidation_map(symbol: str, timeframe: str, ctx: Context) -> dict
     return result
 
 
-def create_server():
-    """Return the MCP server instance for Smithery scanning."""
+def create_server() -> FastMCP:
+    """Create and return the MCP server instance."""
+    global mcp
+    if mcp is None:
+        mcp = FastMCP("Liquidation Map Server")
+        # register tools lazily
+        mcp.tool()(get_liquidation_map)
+        # Provide server info for Smithery scanning
+        mcp.get_server_info = get_server_info  # type: ignore[attr-defined]
+
     return mcp
 
 if __name__ == "__main__":
     # Run the server
-    mcp.run()
+    create_server().run()
 
