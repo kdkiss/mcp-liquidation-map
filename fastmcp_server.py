@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("Liquidation Map Server")
 
 
+
 def get_crypto_price(symbol: str) -> Optional[str]:
     """Fetch the current crypto price from CoinGecko API"""
     try:
@@ -120,6 +121,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
     except Exception as e:
         logger.error(f"Error capturing heatmap: {e}")
         raise RuntimeError(f"Error capturing heatmap: {e}")
+
 
 @mcp.tool()
 async def get_liquidation_map(symbol: str, timeframe: str) -> str:

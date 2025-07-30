@@ -63,6 +63,7 @@ class LiquidationMapMCPServer:
         }
     
 
+
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
         try:
@@ -157,6 +158,7 @@ class LiquidationMapMCPServer:
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
             raise RuntimeError(f"Error capturing heatmap: {e}")
+
 
     async def get_liquidation_map(self, symbol: str, timeframe: str) -> Dict[str, Any]:
         """Handle get_liquidation_map tool call"""

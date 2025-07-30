@@ -137,6 +137,7 @@ async def main():
 
     if not playwright_available():
         print("Playwright not available. Skipping tool tests.")
+
     else:
         await test_liquidation_map_tool()
 

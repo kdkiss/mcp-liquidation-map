@@ -31,6 +31,7 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
 4. Smithery will automatically build and deploy your MCP server
 5. Smithery automatically installs Playwright and the required browsers.
    If you need custom Playwright settings, update `smithery.yaml` accordingly.
+
 6. Use the provided URL to connect to your server from any MCP-compatible client
 
 ### Option 2: Local Development
@@ -60,9 +61,14 @@ playwright install
 ```
 
 4. Run the server:
+
 ```bash
 python fastmcp_server.py
 ```
+If `CHROMEDRIVER_PATH` is not set or the path does not exist, Selenium will
+attempt to download a compatible ChromeDriver using Selenium Manager.
+In offline environments, this download will fail, so you must pre-install
+ChromeDriver and set `CHROMEDRIVER_PATH` accordingly.
 
 5. Run the server:
 ```bash
@@ -128,12 +134,14 @@ The server supports all major cryptocurrencies available on Coinglass, including
 ### Environment Variables
 
  - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
+
  - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
 ### Docker Configuration
 
 The included Dockerfile provides a complete containerized environment. It
 automatically installs Playwright and the Chromium browser:
+
 
 ```dockerfile
 # Use Python 3.11 slim image and install Playwright browsers
@@ -150,6 +158,7 @@ python test_mcp_server.py
 
 The tests that capture screenshots require Playwright with Chromium installed.
 If the browser binaries are missing, the tool tests will be skipped.
+
 
 The test suite includes:
 - Basic server functionality tests
@@ -169,6 +178,7 @@ The test suite includes:
 2. Push to GitHub and deploy via Smithery dashboard
 
 3. Smithery installs Playwright for you automatically.
+
 
 4. Smithery will provide a public URL for your MCP server
 

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
 # Install Playwright browsers
 RUN pip install --no-cache-dir playwright && playwright install --with-deps
 
+
 # Set working directory
 WORKDIR /app
 
