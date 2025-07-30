@@ -6,10 +6,15 @@ Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corre
 
 import logging
 import requests
+
 import base64
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+from io import BytesIO
+from PIL import Image
 
 from fastmcp import Context
+
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +66,43 @@ class LiquidationMapMCPServer:
             }
         }
     
-
+    def setup_webdriver(self, max_retries=3, retry_delay=2):
+        """Configure and return a local Chrome WebDriver instance with retries using webdriver-manager"""
+        try:
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service as ChromeService
+            
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--disable-extensions")
+            
+            for attempt in range(max_retries):
+                try:
+                    logger.info(f"Creating ChromeDriver instance with webdriver-manager (attempt {attempt+1}/{max_retries})")
+                    
+                    # Use webdriver-manager to automatically download and manage ChromeDriver
+                    service = ChromeService(ChromeDriverManager().install())
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                    
+                    logger.info("Successfully created ChromeDriver instance")
+                    return driver
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to create ChromeDriver: {e}")
+                    if attempt < max_retries - 1:
+                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        logger.error("Max retries exceeded. Could not create ChromeDriver.")
+                        raise
+                        
+        except ImportError:
+            logger.error("webdriver-manager not found. Please install it with: pip install webdriver-manager")
+            raise
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
@@ -105,6 +146,7 @@ class LiquidationMapMCPServer:
         try:
             if ctx:
                 await ctx.report_progress(5, 100, "Launching browser")
+
             from playwright.async_api import async_playwright
             logger.info(
                 f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
@@ -170,10 +212,13 @@ class LiquidationMapMCPServer:
 
                     return png_data
 
+
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
-            raise RuntimeError(f"Error capturing heatmap: {e}")
-
+            return None
+        finally:
+            if driver:
+                driver.quit()
 
     async def get_liquidation_map(
         self, ctx: Context | None, symbol: str, timeframe: str
@@ -196,8 +241,9 @@ class LiquidationMapMCPServer:
         except Exception as e:
             raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
 
+
         if not image_data:
-            raise RuntimeError("Failed to generate liquidation map: no image data")
+            raise Exception("Failed to generate liquidation map")
         
         # Convert image to base64 for JSON-RPC response
         image_base64 = base64.b64encode(image_data).decode('utf-8')

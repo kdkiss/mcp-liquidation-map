@@ -12,6 +12,7 @@ from typing import Optional
 import requests
 from fastmcp import FastMCP, Context
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 # No server is created at import time to keep initialization lightweight
 mcp: FastMCP | None = None
+
 
 
 def get_server_info() -> dict:
@@ -74,8 +76,7 @@ async def capture_coinglass_heatmap(
 ) -> bytes:
     """Capture the Coinglass liquidation heatmap using Playwright."""
     try:
-        if ctx:
-            await ctx.report_progress(5, 100, "Launching browser")
+
         from playwright.async_api import async_playwright
         logger.info(
             f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
@@ -93,6 +94,7 @@ async def capture_coinglass_heatmap(
                 )
                 if ctx:
                     await ctx.report_progress(25, 100, "Page loaded")
+
 
                 await page.add_style_tag(
                     content="""
@@ -139,12 +141,14 @@ async def capture_coinglass_heatmap(
 
                 return png_data
 
+
     except Exception as e:
         logger.error(f"Error capturing heatmap: {e}")
         raise RuntimeError(f"Error capturing heatmap: {e}")
 
 
 async def get_liquidation_map(ctx: Context, symbol: str, timeframe: str) -> str:
+
     """
     Get a liquidation heatmap for a cryptocurrency.
     
@@ -168,6 +172,7 @@ async def get_liquidation_map(ctx: Context, symbol: str, timeframe: str) -> str:
     # Get the heatmap image
     try:
         image_data = await capture_coinglass_heatmap(symbol, timeframe, ctx)
+
     except Exception as e:
         raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
 
@@ -177,6 +182,7 @@ async def get_liquidation_map(ctx: Context, symbol: str, timeframe: str) -> str:
     
     # Convert image to base64
     image_base64 = base64.b64encode(image_data).decode('utf-8')
+    await ctx.report_progress(progress=100, total=100, message="Encoding image")
     
     # Get current price
     price = get_crypto_price(symbol)
@@ -188,6 +194,7 @@ async def get_liquidation_map(ctx: Context, symbol: str, timeframe: str) -> str:
     result += f"\n\nImage data (base64): data:image/png;base64,{image_base64}"
 
     await ctx.report_progress(100, 100, "Done")
+
     return result
 
 
@@ -196,10 +203,12 @@ def create_server() -> FastMCP:
     global mcp
     if mcp is None:
         mcp = FastMCP("Liquidation Map Server", request_timeout=120)
+
         # register tools lazily
         mcp.tool()(get_liquidation_map)
         # Provide server info for Smithery scanning
         mcp.get_server_info = get_server_info  # type: ignore[attr-defined]
+
     return mcp
 
 if __name__ == "__main__":
