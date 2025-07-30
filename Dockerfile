@@ -1,34 +1,29 @@
-FROM python:3.9-slim
+FROM seleniarm/standalone-chromium:latest
 
-# Install system dependencies for Chrome
+# Switch to root to install Python
+USER root
+
+# Install Python and pip
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    unzip \
-    gnupg \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install ChromeDriver
-RUN wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm /tmp/chromedriver.zip
+# Create symlink for python command
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY . .
 
-# Use python main.py to handle PORT env var correctly
+# ChromeDriver is already installed in the base image at /usr/bin/chromedriver
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+
+# Start the application
 CMD ["python", "main.py"]

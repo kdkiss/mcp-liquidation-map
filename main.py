@@ -192,8 +192,9 @@ def setup_webdriver(max_retries=3, retry_delay=2):
         try:
             logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
             
-            # Use local ChromeDriver service
-            service = Service('/usr/local/bin/chromedriver')
+            # Use ChromeDriver from environment or default path
+            chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
+            service = Service(chromedriver_path)
             driver = webdriver.Chrome(service=service, options=chrome_options)
             
             logger.info("Successfully created ChromeDriver instance")
