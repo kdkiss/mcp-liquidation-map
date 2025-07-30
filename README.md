@@ -1,128 +1,229 @@
-# MCP Liquidation Map Server
+# Liquidation Map MCP Server
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Docker](https://img.shields.io/badge/docker-available-2496ED.svg?logo=docker)](https://www.docker.com/)
+A Smithery-compatible Model Context Protocol (MCP) server that provides cryptocurrency liquidation heatmaps. Users can request liquidation maps for different cryptocurrencies with 12-hour or 24-hour timeframes, and the server returns high-quality images of the liquidation data.
 
-A high-performance MCP (Model Control Protocol) server for retrieving and serving cryptocurrency liquidation heatmaps. This service captures real-time liquidation data from Coinglass and provides it through a standardized JSON-RPC 2.0 interface.
+## Features
 
-## 🌟 Features
+- **Cryptocurrency Support**: Works with major cryptocurrencies (BTC, ETH, BNB, ADA, SOL, XRP, DOT, DOGE, AVAX, MATIC, and more)
+- **Multiple Timeframes**: Supports both 12-hour and 24-hour liquidation maps
+- **High-Quality Images**: Returns PNG images with optimized resolution and clarity
+- **Real-time Price Data**: Includes current cryptocurrency prices from CoinGecko API
+- **Smithery Compatible**: Fully compatible with Smithery's MCP server registry and deployment platform
+- **FastMCP Integration**: Built using the FastMCP library for simplified development
 
-- **Real-time Liquidation Data**: Capture and serve liquidation heatmaps for various cryptocurrencies
-- **Multiple Timeframes**: Support for 12h, 24h, 1 month, and 3 month timeframes
-- **MCP Compliance**: Implements the full JSON-RPC 2.0 specification for MCP compatibility
-- **Docker Support**: Easy deployment using Docker containers
-- **High Performance**: Asynchronous processing for handling multiple requests efficiently
+## Quick Start
 
-## 🚀 Quick Start
+### Option 1: Deploy on Smithery (Recommended)
 
-### Prerequisites
+1. Fork this repository to your GitHub account
+2. Visit [Smithery.ai](https://smithery.ai)
+3. Click "Deploy" and connect your GitHub repository
+4. Smithery will automatically build and deploy your MCP server
+5. Use the provided URL to connect to your server from any MCP-compatible client
 
-- Python 3.9+
-- Docker (optional)
-- Chrome/Chromium and ChromeDriver (for Selenium)
+### Option 2: Local Development
 
-### Installation
+#### Prerequisites
+
+- Python 3.11+
+- Google Chrome browser
+- ChromeDriver (compatible with your Chrome version)
+- Git
+
+#### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/mcp-liquidation-map.git
-   cd mcp-liquidation-map
-   ```
+```bash
+git clone <your-repo-url>
+cd liquidation-map-mcp-server
+```
 
 2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-3. Run the server:
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000
-   ```
+3. Install Chrome and ChromeDriver:
+```bash
+# On Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable
 
-### Using Docker
+# Download compatible ChromeDriver
+CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
+wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip
+sudo unzip /tmp/chromedriver.zip -d /tmp/
+sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
+sudo chmod +x /usr/local/bin/chromedriver
+```
+
+4. Set environment variables:
+```bash
+export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+```
+
+5. Run the server:
+```bash
+python fastmcp_server.py
+```
+
+## Usage
+
+### Tool: get_liquidation_map
+
+Retrieves a liquidation heatmap for a specified cryptocurrency and timeframe.
+
+**Parameters:**
+- `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH", "SOL")
+- `timeframe` (string, required): Time period for the heatmap ("12 hour" or "24 hour")
+
+**Returns:**
+- Base64-encoded PNG image of the liquidation heatmap
+- Text description with symbol, timeframe, and current price
+
+**Example Usage:**
+
+```python
+# Using the MCP client
+result = await client.call_tool("get_liquidation_map", {
+    "symbol": "BTC",
+    "timeframe": "24 hour"
+})
+```
+
+### Supported Cryptocurrencies
+
+The server supports all major cryptocurrencies available on Coinglass, including:
+- Bitcoin (BTC)
+- Ethereum (ETH)
+- Binance Coin (BNB)
+- Cardano (ADA)
+- Solana (SOL)
+- Ripple (XRP)
+- Polkadot (DOT)
+- Dogecoin (DOGE)
+- Avalanche (AVAX)
+- Polygon (MATIC)
+- And many more...
+
+## Architecture
+
+### Core Components
+
+1. **LiquidationMapMCPServer**: Main server class implementing MCP protocol
+2. **FastMCP Integration**: Simplified server setup using FastMCP library
+3. **Web Scraping Engine**: Selenium-based automation for capturing Coinglass heatmaps
+4. **Price API Integration**: CoinGecko API for real-time cryptocurrency prices
+5. **Image Processing**: High-quality PNG generation with optimized compression
+
+### Data Sources
+
+- **Liquidation Data**: [Coinglass](https://www.coinglass.com/pro/futures/LiquidationHeatMap)
+- **Price Data**: [CoinGecko API](https://api.coingecko.com/api/v3/)
+
+## Configuration
+
+### Environment Variables
+
+- `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`)
+- `PYTHONUNBUFFERED`: Set to `1` for real-time logging
+
+### Docker Configuration
+
+The included Dockerfile provides a complete containerized environment:
+
+```dockerfile
+FROM python:3.11-slim
+# Installs Chrome, ChromeDriver, and all dependencies
+# Exposes port 8000 for the MCP server
+```
+
+## Testing
+
+Run the test suite to verify functionality:
+
+```bash
+python test_mcp_server.py
+```
+
+The test suite includes:
+- Basic server functionality tests
+- Tool execution tests for both 12-hour and 24-hour timeframes
+- Input validation tests
+- Image generation verification
+
+## Deployment
+
+### Smithery Deployment
+
+1. Ensure your repository includes:
+   - `fastmcp_server.py` (main server file)
+   - `requirements.txt` (dependencies)
+   - `Dockerfile` (container configuration)
+
+2. Push to GitHub and deploy via Smithery dashboard
+
+3. Smithery will provide a public URL for your MCP server
+
+### Manual Docker Deployment
 
 ```bash
 # Build the Docker image
-docker build -t mcp-liquidation-map .
+docker build -t liquidation-map-mcp .
 
 # Run the container
-docker run -p 8000:8000 mcp-liquidation-map
+docker run -p 8000:8000 liquidation-map-mcp
 ```
 
-## 📡 API Endpoints
+## Troubleshooting
 
-### JSON-RPC 2.0 Endpoint
+### Common Issues
 
-- `POST /` - Main JSON-RPC 2.0 endpoint
+1. **ChromeDriver Version Mismatch**
+   - Ensure ChromeDriver version matches your Chrome browser version
+   - Download the correct version from [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/)
 
-### Standard Endpoints
+2. **Selenium Timeout Errors**
+   - Check internet connectivity
+   - Verify Coinglass website accessibility
+   - Increase timeout values if needed
 
-- `GET /health` - Health check endpoint
-- `POST /get-liquidation-map` - Legacy endpoint (for backward compatibility)
+3. **Image Generation Failures**
+   - Ensure sufficient memory for Chrome browser
+   - Check that the heatmap container element is found on the page
 
-## 🔧 MCP Tools
+### Debug Mode
 
-The server implements the following MCP tools:
+Enable debug logging by setting the log level:
 
-### `get_liquidation_map`
-
-Get a liquidation heatmap for a specific cryptocurrency.
-
-**Parameters:**
-- `symbol` (string): Cryptocurrency symbol (e.g., "BTC", "ETH")
-- `timeframe` (string): Time period for the heatmap ("12 hour", "24 hour", "1 month", "3 month")
-
-**Example Request:**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "tools/call",
-  "params": {
-    "name": "get_liquidation_map",
-    "arguments": {
-      "symbol": "BTC",
-      "timeframe": "24 hour"
-    }
-  },
-  "id": 1
-}
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
 ```
 
-## 🛠️ Development
-
-### Running Tests
-
-```bash
-# Install test dependencies
-pip install -r requirements-test.txt
-
-# Run tests
-pytest
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-## 📧 Contact
+## Support
 
-Your Name - [@your_twitter](https://twitter.com/your_handle) - email@example.com
+For issues and questions:
+- Create an issue on GitHub
+- Check the [Smithery Documentation](https://smithery.ai/docs)
+- Review the [FastMCP Documentation](https://gofastmcp.com)
 
-Project Link: [https://github.com/yourusername/mcp-liquidation-map](https://github.com/yourusername/mcp-liquidation-map)
+## Acknowledgments
 
-## 🙏 Acknowledgments
+- [Smithery.ai](https://smithery.ai) for MCP server hosting and registry
+- [FastMCP](https://gofastmcp.com) for the Python MCP framework
+- [Coinglass](https://www.coinglass.com) for liquidation data
+- [CoinGecko](https://www.coingecko.com) for cryptocurrency price data
 
-- [Coinglass](https://www.coinglass.com) for the liquidation data
-- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
-- [Selenium](https://www.selenium.dev/) for browser automation

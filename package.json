@@ -1,0 +1,30 @@
+{
+  "name": "liquidation-map-mcp-server",
+  "version": "1.0.0",
+  "description": "Smithery-compatible MCP server for cryptocurrency liquidation heatmaps",
+  "main": "fastmcp_server.py",
+  "scripts": {
+    "start": "python fastmcp_server.py",
+    "test": "python test_mcp_server.py"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "cryptocurrency",
+    "liquidation",
+    "heatmap",
+    "smithery",
+    "fastmcp"
+  ],
+  "author": "MCP Server Developer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/liquidation-map-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/liquidation-map-mcp-server/issues"
+  },
+  "homepage": "https://github.com/your-username/liquidation-map-mcp-server#readme"
+}
+
