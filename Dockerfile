@@ -10,14 +10,18 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for python command
-RUN ln -s /usr/bin/python3 /usr/bin/python
+# Create a virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip in the virtual environment
+RUN /opt/venv/bin/pip install --no-cache-dir --upgrade pip
 
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY . .
@@ -25,5 +29,5 @@ COPY . .
 # ChromeDriver is already installed in the base image at /usr/bin/chromedriver
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
-# Start the application
-CMD ["python", "main.py"]
+# Start the application using the virtual environment's Python
+CMD ["/opt/venv/bin/python", "main.py"]
