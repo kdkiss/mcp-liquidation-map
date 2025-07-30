@@ -190,8 +190,8 @@ def setup_webdriver(max_retries=5, retry_delay=2):
     chrome_options.add_argument("--window-size=5400,2950")
     chrome_options.add_argument("--force-device-scale-factor=2")
     
-    selenium_host = os.getenv('SELENIUM_HOST', 'localhost')
-    selenium_port = os.getenv('SELENIUM_PORT', '4444')
+    selenium_host = 'localhost'
+    selenium_port = '4444'
     
     for attempt in range(max_retries):
         try:
@@ -464,7 +464,7 @@ if __name__ == "__main__":
     logger.info("Starting Liquidation Map MCP Server...")
     uvicorn.run(
         app,
-        host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", "8000")),
-        log_level=os.getenv("LOG_LEVEL", "info").lower()
+        host="0.0.0.0",
+        port=8000,
+        log_level="info"
     )

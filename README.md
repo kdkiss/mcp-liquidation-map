@@ -91,16 +91,6 @@ Get a liquidation heatmap for a specific cryptocurrency.
 
 ## 🛠️ Development
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `HOST` | Server host | `0.0.0.0` |
-| `PORT` | Server port | `8000` |
-| `LOG_LEVEL` | Logging level | `info` |
-| `SELENIUM_HOST` | Selenium server host | `localhost` |
-| `SELENIUM_PORT` | Selenium server port | `4444` |
-
 ### Running Tests
 
 ```bash
