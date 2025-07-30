@@ -84,7 +84,10 @@ async def capture_coinglass_heatmap(
             f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
         )
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage"],
+            )
             async with browser.new_context(
                 viewport={"width": 1920, "height": 1080}, device_scale_factor=2
             ) as context:
