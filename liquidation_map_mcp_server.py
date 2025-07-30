@@ -109,7 +109,10 @@ class LiquidationMapMCPServer:
                 )
                 page = await context.new_page()
 
-                await page.goto("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
+                await page.goto(
+                    "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
+                    timeout=60000,
+                )
 
                 await page.add_style_tag(
                     content="""
@@ -119,7 +122,7 @@ class LiquidationMapMCPServer:
                     """
                 )
 
-                await page.wait_for_timeout(5000)
+                await page.wait_for_load_state("networkidle")
 
                 if symbol != "BTC":
                     try:
@@ -128,10 +131,13 @@ class LiquidationMapMCPServer:
                         await page.fill("input.MuiAutocomplete-input", symbol)
                         await page.wait_for_timeout(2000)
                         try:
-                            await page.click(f"//li[@role='option' and text()='{symbol}']")
+                            await page.click(
+                                f"//li[@role='option' and text()='{symbol}']",
+                                timeout=5000,
+                            )
                         except Exception:
                             await page.keyboard.press("Enter")
-                        await page.wait_for_timeout(15000)
+                        await page.wait_for_load_state("networkidle")
                     except Exception as symbol_e:
                         logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
 
@@ -140,12 +146,11 @@ class LiquidationMapMCPServer:
                 ).strip()
                 if current_time != time_period:
                     await page.click("div.MuiSelect-root button.MuiSelect-button")
-                    await page.wait_for_timeout(2000)
-                    await page.evaluate(
-                        "(tp) => { const opts = document.querySelectorAll('li[role=\"option\"]'); for (const o of opts) { if (o.textContent.includes(tp)) { o.click(); break; } } }",
-                        time_period,
+                    await page.wait_for_selector("li[role='option']")
+                    await page.click(
+                        f"//li[@role='option' and contains(text(), '{time_period}')]",
                     )
-                    await page.wait_for_timeout(3000)
+                    await page.wait_for_load_state("networkidle")
 
                 heatmap = await page.wait_for_selector("div.echarts-for-react")
                 box = await heatmap.bounding_box()
