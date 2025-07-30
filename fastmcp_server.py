@@ -174,8 +174,13 @@ async def get_liquidation_map(symbol: str, timeframe: str, ctx: Context) -> dict
         result += f" - Current price: {price}"
     
     result += f"\n\nImage data (base64): data:image/png;base64,{image_base64}"
-    
+
     return result
+
+
+def create_server():
+    """Return the MCP server instance for Smithery scanning."""
+    return mcp
 
 if __name__ == "__main__":
     # Run the server

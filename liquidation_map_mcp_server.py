@@ -7,8 +7,6 @@ Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corre
 import logging
 import requests
 
-import time
-import json
 import base64
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
