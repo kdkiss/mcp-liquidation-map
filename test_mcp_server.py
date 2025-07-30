@@ -5,7 +5,6 @@ Test script for the Liquidation Map MCP Server
 
 import asyncio
 import base64
-import os
 import sys
 from pathlib import Path
 
@@ -13,6 +12,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from liquidation_map_mcp_server import LiquidationMapMCPServer
+from playwright.sync_api import sync_playwright
+
+
+def playwright_available() -> bool:
+    """Return True if Playwright and its browsers are available."""
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            browser.close()
+        return True
+    except Exception as e:
+        print(f"Playwright not available: {e}")
+        return False
 
 async def test_server_basic():
     """Test basic server functionality"""
@@ -120,12 +132,14 @@ async def main():
     """Run all tests"""
     print("Starting MCP Server Tests...")
     print("=" * 50)
-    
-    # Set environment variable for ChromeDriver
-    os.environ['CHROMEDRIVER_PATH'] = '/usr/local/bin/chromedriver'
-    
+
     await test_server_basic()
-    await test_liquidation_map_tool()
+
+    if not playwright_available():
+        print("Playwright not available. Skipping tool tests.")
+    else:
+        await test_liquidation_map_tool()
+
     await test_invalid_inputs()
     
     print("\n" + "=" * 50)

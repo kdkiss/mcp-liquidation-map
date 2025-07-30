@@ -8,21 +8,10 @@ import os
 import logging
 import requests
 import time
-import json
 import base64
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
-from io import BytesIO
-from PIL import Image
+from typing import Any, Dict, Optional
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
+from playwright.async_api import async_playwright
 
 # Configure logging
 logging.basicConfig(
@@ -73,36 +62,6 @@ class LiquidationMapMCPServer:
             }
         }
     
-    def setup_webdriver(self, max_retries=3, retry_delay=2):
-        """Configure and return a local Chrome WebDriver instance with retries"""
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-extensions")
-        
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
-                
-                # Use ChromeDriver from environment or default path
-                chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-                service = Service(chromedriver_path)
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                
-                logger.info("Successfully created ChromeDriver instance")
-                return driver
-                
-            except Exception as e:
-                logger.warning(f"Failed to create ChromeDriver: {e}")
-                if attempt < max_retries - 1:
-                    logger.info(f"Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                else:
-                    logger.error("Max retries exceeded. Could not create ChromeDriver.")
-                    raise
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
@@ -137,160 +96,67 @@ class LiquidationMapMCPServer:
             return None
 
     async def capture_coinglass_heatmap(self, symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
-        """
-        Capture the Coinglass liquidation heatmap
-        
-        Args:
-            symbol (str): Cryptocurrency symbol (e.g., "BTC", "ETH")
-            time_period (str): Time period to select (e.g., "24 hour", "12 hour")
-            
-        Returns:
-            bytes: PNG image data
-        """
-        driver = None
+        """Capture the Coinglass liquidation heatmap using Playwright."""
         try:
-            logger.info(f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe")
-            driver = self.setup_webdriver()
-            
-            # Navigate to Coinglass liquidation page
-            driver.get("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
-            wait = WebDriverWait(driver, 20)
-            
-            # Optimize page for screenshot
-            driver.execute_script("""
-                var style = document.createElement('style');
-                style.innerHTML = `
-                    * {
-                        transition: none !important;
-                        animation: none !important;
-                    }
-                    .echarts-for-react {
-                        width: 100% !important;
-                        height: 100% !important;
-                    }
-                    canvas {
-                        image-rendering: -webkit-optimize-contrast !important;
-                        image-rendering: crisp-edges !important;
-                    }
-                `;
-                document.head.appendChild(style);
-                window.devicePixelRatio = 2;
-            """)
-            
-            # Wait for page to load
-            time.sleep(5)
-            
-            # Use JavaScript to force symbol change
-            if symbol != "BTC":
-                try:
-                    # Click Symbol tab first
-                    symbol_tab = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@role='tab' and contains(text(), 'Symbol')]")))
-                    symbol_tab.click()
-                    time.sleep(2)
-                    logger.info("Clicked Symbol tab")
-                    
-                    # Use actual user simulation instead of JavaScript
-                    from selenium.webdriver.common.action_chains import ActionChains
-                    
-                    # Find the input element
-                    input_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input.MuiAutocomplete-input")))
-                    
-                    # Clear the input by selecting all and typing
-                    actions = ActionChains(driver)
-                    actions.click(input_element)
-                    actions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL)
-                    actions.send_keys(symbol)
-                    actions.perform()
-                    
-                    time.sleep(2)
-                    logger.info(f"Typed {symbol} into input field")
-                    
-                    # Try to click on dropdown option or press Enter
+            logger.info(
+                f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
+            )
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080}, device_scale_factor=2
+                )
+                page = await context.new_page()
+
+                await page.goto("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
+
+                await page.add_style_tag(
+                    content="""
+                    * { transition: none !important; animation: none !important; }
+                    .echarts-for-react { width: 100% !important; height: 100% !important; }
+                    canvas { image-rendering: -webkit-optimize-contrast !important; image-rendering: crisp-edges !important; }
+                    """
+                )
+
+                await page.wait_for_timeout(5000)
+
+                if symbol != "BTC":
                     try:
-                        # Wait for dropdown to appear and click option
-                        option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option' and text()='{symbol}']")))
-                        option.click()
-                        logger.info(f"Clicked {symbol} option from dropdown")
-                    except:
-                        # Fallback: press Enter
-                        actions = ActionChains(driver)
-                        actions.send_keys(Keys.ENTER)
-                        actions.perform()
-                        logger.info(f"Pressed Enter to select {symbol}")
-                    
-                    # Wait for chart to update
-                    time.sleep(15)
-                    logger.info(f"Waited for chart to update with {symbol} data")
-                    
-                except Exception as symbol_e:
-                    logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
-            else:
-                logger.info("Using default BTC symbol")
-            
-            # Find and click the time period dropdown button
-            time_dropdown = wait.until(EC.element_to_be_clickable((
-                By.CSS_SELECTOR, "div.MuiSelect-root button.MuiSelect-button"
-            )))
-            
-            if time_dropdown.text.strip() != time_period:
-                time_dropdown.click()
-                time.sleep(2)
-                
-                driver.execute_script(f"""
-                    var options = document.querySelectorAll('li[role="option"]');
-                    for(var i = 0; i < options.length; i++) {{
-                        if(options[i].textContent.includes('{time_period}')) {{
-                            options[i].click();
-                            break;
-                        }}
-                    }}
-                """)
-                time.sleep(3)
-            
-            # Find and capture the chart
-            try:
-                heatmap_container = wait.until(EC.presence_of_element_located((
-                    By.CSS_SELECTOR, "div.echarts-for-react"
-                )))
-            except Exception:
-                heatmap_container = wait.until(EC.presence_of_element_located((
-                    By.XPATH, "//div[contains(@class, 'echarts-for-react')]"
-                )))
-            
-            time.sleep(3)
-            
-            rect = driver.execute_script("""
-                var rect = arguments[0].getBoundingClientRect();
-                return {
-                    x: rect.left,
-                    y: rect.top,
-                    width: rect.width,
-                    height: rect.height
-                };
-            """, heatmap_container)
-            
-            # Capture screenshot with CDP
-            result = driver.execute_cdp_cmd('Page.captureScreenshot', {
-                'clip': {
-                    'x': rect['x'],
-                    'y': rect['y'],
-                    'width': rect['width'],
-                    'height': rect['height'],
-                    'scale': 2
-                },
-                'captureBeyondViewport': True,
-                'fromSurface': True
-            })
-            
-            png_data = base64.b64decode(result['data'])
-            return png_data
-            
+                        await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
+                        await page.wait_for_timeout(2000)
+                        await page.fill("input.MuiAutocomplete-input", symbol)
+                        await page.wait_for_timeout(2000)
+                        try:
+                            await page.click(f"//li[@role='option' and text()='{symbol}']")
+                        except Exception:
+                            await page.keyboard.press("Enter")
+                        await page.wait_for_timeout(15000)
+                    except Exception as symbol_e:
+                        logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
+
+                current_time = (
+                    await page.inner_text("div.MuiSelect-root button.MuiSelect-button")
+                ).strip()
+                if current_time != time_period:
+                    await page.click("div.MuiSelect-root button.MuiSelect-button")
+                    await page.wait_for_timeout(2000)
+                    await page.evaluate(
+                        "(tp) => { const opts = document.querySelectorAll('li[role=\"option\"]'); for (const o of opts) { if (o.textContent.includes(tp)) { o.click(); break; } } }",
+                        time_period,
+                    )
+                    await page.wait_for_timeout(3000)
+
+                heatmap = await page.wait_for_selector("div.echarts-for-react")
+                box = await heatmap.bounding_box()
+
+                png_data = await page.screenshot(clip=box, type="png")
+
+                await browser.close()
+                return png_data
+
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
-            return None
-        finally:
-            if driver:
-                driver.quit()
+            raise RuntimeError(f"Error capturing heatmap: {e}")
 
     async def get_liquidation_map(self, symbol: str, timeframe: str) -> Dict[str, Any]:
         """Handle get_liquidation_map tool call"""
@@ -304,10 +170,13 @@ class LiquidationMapMCPServer:
         logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
         
         # Get the heatmap image
-        image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
-        
+        try:
+            image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
+
         if not image_data:
-            raise Exception("Failed to generate liquidation map")
+            raise RuntimeError("Failed to generate liquidation map: no image data")
         
         # Convert image to base64 for JSON-RPC response
         image_base64 = base64.b64encode(image_data).decode('utf-8')
