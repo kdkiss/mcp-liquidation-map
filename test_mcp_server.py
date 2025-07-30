@@ -12,15 +12,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from liquidation_map_mcp_server import LiquidationMapMCPServer
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 
 
-def playwright_available() -> bool:
+async def playwright_available() -> bool:
     """Return True if Playwright and its browsers are available."""
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            browser.close()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            await browser.close()
         return True
     except Exception as e:
         print(f"Playwright not available: {e}")
@@ -51,7 +51,7 @@ async def test_liquidation_map_tool():
     # Test with BTC 24 hour
     try:
         print("Testing BTC 24 hour liquidation map...")
-        result = await server.get_liquidation_map("BTC", "24 hour")
+        result = await server.get_liquidation_map(None, "BTC", "24 hour")
         
         if "content" in result and len(result["content"]) > 0:
             # Check if we have image content
@@ -87,7 +87,7 @@ async def test_liquidation_map_tool():
     # Test with ETH 12 hour
     try:
         print("\nTesting ETH 12 hour liquidation map...")
-        result = await server.get_liquidation_map("ETH", "12 hour")
+        result = await server.get_liquidation_map(None, "ETH", "12 hour")
         
         if "content" in result and len(result["content"]) > 0:
             # Check if we have image content
@@ -121,7 +121,7 @@ async def test_invalid_inputs():
     
     # Test invalid timeframe
     try:
-        await server.get_liquidation_map("BTC", "1 week")
+        await server.get_liquidation_map(None, "BTC", "1 week")
         print("✗ Should have failed with invalid timeframe")
     except ValueError as e:
         print(f"✓ Correctly rejected invalid timeframe: {e}")
@@ -135,7 +135,7 @@ async def main():
 
     await test_server_basic()
 
-    if not playwright_available():
+    if not await playwright_available():
         print("Playwright not available. Skipping tool tests.")
 
     else:
