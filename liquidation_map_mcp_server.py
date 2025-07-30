@@ -4,14 +4,10 @@ Smithery-compatible MCP Server for Liquidation Maps
 Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corresponding images.
 """
 
-import os
 import logging
 import requests
-import time
 import base64
 from typing import Any, Dict, Optional
-
-from playwright.async_api import async_playwright
 
 # Configure logging
 logging.basicConfig(
@@ -99,6 +95,7 @@ class LiquidationMapMCPServer:
     async def capture_coinglass_heatmap(self, symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
         """Capture the Coinglass liquidation heatmap using Playwright."""
         try:
+            from playwright.async_api import async_playwright
             logger.info(
                 f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
             )
@@ -109,7 +106,10 @@ class LiquidationMapMCPServer:
                 )
                 page = await context.new_page()
 
-                await page.goto("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
+                await page.goto(
+                    "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
+                    timeout=60000,
+                )
 
                 await page.add_style_tag(
                     content="""
@@ -119,19 +119,21 @@ class LiquidationMapMCPServer:
                     """
                 )
 
-                await page.wait_for_timeout(5000)
+                await page.wait_for_load_state("networkidle")
 
                 if symbol != "BTC":
                     try:
                         await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
-                        await page.wait_for_timeout(2000)
+                        await page.wait_for_selector("input.MuiAutocomplete-input")
                         await page.fill("input.MuiAutocomplete-input", symbol)
-                        await page.wait_for_timeout(2000)
                         try:
-                            await page.click(f"//li[@role='option' and text()='{symbol}']")
+                            await page.click(
+                                f"//li[@role='option' and text()='{symbol}']",
+                                timeout=5000,
+                            )
                         except Exception:
                             await page.keyboard.press("Enter")
-                        await page.wait_for_timeout(15000)
+                        await page.wait_for_load_state("networkidle")
                     except Exception as symbol_e:
                         logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
 
@@ -140,12 +142,11 @@ class LiquidationMapMCPServer:
                 ).strip()
                 if current_time != time_period:
                     await page.click("div.MuiSelect-root button.MuiSelect-button")
-                    await page.wait_for_timeout(2000)
-                    await page.evaluate(
-                        "(tp) => { const opts = document.querySelectorAll('li[role=\"option\"]'); for (const o of opts) { if (o.textContent.includes(tp)) { o.click(); break; } } }",
-                        time_period,
+                    await page.wait_for_selector("li[role='option']")
+                    await page.click(
+                        f"//li[@role='option' and contains(text(), '{time_period}')]",
                     )
-                    await page.wait_for_timeout(3000)
+                    await page.wait_for_load_state("networkidle")
 
                 heatmap = await page.wait_for_selector("div.echarts-for-react")
                 box = await heatmap.bounding_box()
