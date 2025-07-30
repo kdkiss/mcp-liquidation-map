@@ -70,10 +70,12 @@ sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
 sudo chmod +x /usr/local/bin/chromedriver
 ```
 
-4. Set environment variables:
+4. Set environment variables (optional):
 ```bash
 export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ```
+If `CHROMEDRIVER_PATH` is not set or the path does not exist, Selenium will
+automatically download a compatible ChromeDriver using Selenium Manager.
 
 5. Run the server:
 ```bash
@@ -138,8 +140,8 @@ The server supports all major cryptocurrencies available on Coinglass, including
 
 ### Environment Variables
 
-- `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`)
-- `PYTHONUNBUFFERED`: Set to `1` for real-time logging
+ - `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`). If the path doesn't exist, Selenium Manager will automatically download a compatible driver.
+ - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
 ### Docker Configuration
 

@@ -46,13 +46,23 @@ def setup_webdriver(max_retries=3, retry_delay=2):
     
     for attempt in range(max_retries):
         try:
-            logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
-            
-            # Use ChromeDriver from environment or default path
-            chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
-            service = Service(chromedriver_path)
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            
+            logger.info(
+                f"Creating local ChromeDriver instance (attempt {attempt + 1}/{max_retries})"
+            )
+
+            # Use ChromeDriver from environment if provided
+            chromedriver_path = os.environ.get(
+                "CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver"
+            )
+
+            if chromedriver_path and os.path.exists(chromedriver_path):
+                logger.info(f"Using ChromeDriver at {chromedriver_path}")
+                service = Service(chromedriver_path)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+            else:
+                logger.info("No ChromeDriver found, falling back to Selenium Manager")
+                driver = webdriver.Chrome(options=chrome_options)
+
             logger.info("Successfully created ChromeDriver instance")
             return driver
             
