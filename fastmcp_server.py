@@ -24,8 +24,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastMCP server
-mcp = FastMCP("Liquidation Map Server")
+# Allow up to 5 minutes for long-running operations
+mcp = FastMCP(
+    "Liquidation Map Server",
+    version="1.0.0",
+    request_timeout=300  # seconds
+)
 
 
 
