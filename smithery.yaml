@@ -7,8 +7,8 @@ startCommand:
     |-
     (config) => ({
       command: 'python',
-      args: ['fastmcp_server.py'],
-      env: { CHROMEDRIVER_PATH: process.env.CHROMEDRIVER_PATH || '/usr/local/bin/chromedriver' }
+      args: ['fastmcp_server.py']
+
     })
   configSchema:
     # JSON Schema defining the configuration options for the MCP.

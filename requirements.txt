@@ -1,7 +1,7 @@
 fastapi>=0.104.0
 uvicorn>=0.24.0
-selenium>=4.15.0
 pillow>=10.0.0
+playwright>=1.42.0
 requests>=2.31.0
 pydantic>=2.5.0
 fastmcp>=2.0.0

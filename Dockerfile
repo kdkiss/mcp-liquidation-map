@@ -10,21 +10,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
+# Install Playwright browsers
+RUN pip install --no-cache-dir playwright && playwright install --with-deps
 
-# Install ChromeDriver matching the installed Chrome version
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+') \
-    && wget -O /tmp/chromedriver.zip \
-        https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip \
-    && unzip /tmp/chromedriver.zip -d /tmp/ \
-    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
 
 # Set working directory
 WORKDIR /app
@@ -38,7 +26,6 @@ COPY fastmcp_server.py .
 COPY liquidation_map_mcp_server.py .
 
 # Set environment variables
-ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ENV PYTHONUNBUFFERED=1
 
 # Expose port

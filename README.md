@@ -29,10 +29,8 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
 2. Visit [Smithery.ai](https://smithery.ai)
 3. Click "Deploy" and connect your GitHub repository
 4. Smithery will automatically build and deploy your MCP server
-5. The deployment sets the `CHROMEDRIVER_PATH` environment variable to
-   `/usr/local/bin/chromedriver` so ChromeDriver works out of the box. If you
-   use a custom path or your environment is offline, update `smithery.yaml`
-   accordingly and ensure ChromeDriver is pre-installed at that location.
+5. Smithery automatically installs Playwright and the required browsers.
+   If you need custom Playwright settings, update `smithery.yaml` accordingly.
 
 6. Use the provided URL to connect to your server from any MCP-compatible client
 
@@ -41,9 +39,8 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
 #### Prerequisites
 
 - Python 3.11+
-- Google Chrome browser
-- ChromeDriver (compatible with your Chrome version)
 - Git
+- [Playwright](https://playwright.dev/python/) with Chromium browser
 
 #### Installation
 
@@ -58,23 +55,15 @@ cd liquidation-map-mcp-server
 pip install -r requirements.txt
 ```
 
-3. Install Chrome and ChromeDriver:
+3. Install Playwright browsers:
 ```bash
-# On Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install -y google-chrome-stable
-
-# Download compatible ChromeDriver
-CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
-wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip
-sudo unzip /tmp/chromedriver.zip -d /tmp/
-sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
-sudo chmod +x /usr/local/bin/chromedriver
+playwright install
 ```
 
-4. Set environment variables (optional):
+4. Run the server:
+
 ```bash
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+python fastmcp_server.py
 ```
 If `CHROMEDRIVER_PATH` is not set or the path does not exist, Selenium will
 attempt to download a compatible ChromeDriver using Selenium Manager.
@@ -131,7 +120,7 @@ The server supports all major cryptocurrencies available on Coinglass, including
 
 1. **LiquidationMapMCPServer**: Main server class implementing MCP protocol
 2. **FastMCP Integration**: Simplified server setup using FastMCP library
-3. **Web Scraping Engine**: Selenium-based automation for capturing Coinglass heatmaps
+3. **Web Scraping Engine**: Playwright automation for capturing Coinglass heatmaps
 4. **Price API Integration**: CoinGecko API for real-time cryptocurrency prices
 5. **Image Processing**: High-quality PNG generation with optimized compression
 
@@ -144,19 +133,18 @@ The server supports all major cryptocurrencies available on Coinglass, including
 
 ### Environment Variables
 
- - `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`). If the path doesn't exist, Selenium Manager will try to download a compatible driver. For offline setups, install ChromeDriver manually and set this path.
+ - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
  - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
 ### Docker Configuration
 
 The included Dockerfile provides a complete containerized environment. It
-automatically installs a ChromeDriver version that matches the Chrome browser
-installed in the image:
+automatically installs Playwright and the Chromium browser:
+
 
 ```dockerfile
-FROM python:3.11-slim
-# Installs Chrome, ChromeDriver, and all dependencies
+# Use Python 3.11 slim image and install Playwright browsers
 # Exposes port 8000 for the MCP server
 ```
 
@@ -168,8 +156,9 @@ Run the test suite to verify functionality:
 python test_mcp_server.py
 ```
 
-The tests that capture screenshots require ChromeDriver. If the executable is not
-found at the path specified by `CHROMEDRIVER_PATH`, those tests will be skipped.
+The tests that capture screenshots require Playwright with Chromium installed.
+If the browser binaries are missing, the tool tests will be skipped.
+
 
 The test suite includes:
 - Basic server functionality tests
@@ -188,9 +177,8 @@ The test suite includes:
 
 2. Push to GitHub and deploy via Smithery dashboard
 
-3. Smithery automatically sets `CHROMEDRIVER_PATH` to
-   `/usr/local/bin/chromedriver`. Adjust the path in `smithery.yaml` if your
-   deployment uses a different location.
+3. Smithery installs Playwright for you automatically.
+
 
 4. Smithery will provide a public URL for your MCP server
 
@@ -208,17 +196,17 @@ docker run -p 8000:8000 liquidation-map-mcp
 
 ### Common Issues
 
-1. **ChromeDriver Version Mismatch**
-   - Ensure ChromeDriver version matches your Chrome browser version
-   - Download the correct version from [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/)
+1. **Playwright Browser Issues**
+   - Run `playwright install` to ensure the Chromium browser is available
+   - Verify the browser binaries are present in the deployment image
 
-2. **Selenium Timeout Errors**
+2. **Timeout Errors**
    - Check internet connectivity
    - Verify Coinglass website accessibility
    - Increase timeout values if needed
 
 3. **Image Generation Failures**
-   - Ensure sufficient memory for Chrome browser
+   - Ensure sufficient memory for the browser
    - Check that the heatmap container element is found on the page
 
 ### Debug Mode
