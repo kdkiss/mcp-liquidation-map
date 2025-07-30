@@ -2,13 +2,15 @@ import os
 import logging
 import requests
 import time
-from datetime import datetime
 import json
-from fastapi import FastAPI, HTTPException
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -30,6 +32,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# MCP Server Implementation
+class JSONRPCRequest(BaseModel):
+    jsonrpc: str = "2.0"
+    method: str
+    params: Optional[Union[Dict[str, Any], List[Any]]] = None
+    id: Optional[Union[str, int]] = None
+
+class ToolInfo(BaseModel):
+    name: str
+    description: str
+    parameters: Dict[str, Any]
+    returns: Dict[str, Any]
+
+class ResourceInfo(BaseModel):
+    name: str
+    description: str
+    type: str
+
 # Initialize FastAPI app
 app = FastAPI(title="Liquidation Map MCP Server")
 
@@ -42,10 +62,124 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request model
-class LiquidationMapRequest(BaseModel):
-    symbol: str
-    timeframe: str
+# Tool definitions
+TOOLS = {
+    "get_liquidation_map": {
+        "description": "Get a liquidation heatmap for a cryptocurrency",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Cryptocurrency symbol (e.g., BTC, ETH)"
+                },
+                "timeframe": {
+                    "type": "string",
+                    "description": "Time period for the heatmap",
+                    "enum": ["12 hour", "24 hour", "1 month", "3 month"]
+                }
+            },
+            "required": ["symbol", "timeframe"]
+        },
+        "returns": {
+            "type": "string",
+            "format": "binary",
+            "description": "PNG image of the liquidation heatmap"
+        }
+    }
+}
+
+# MCP Endpoints
+@app.post("/")
+async def handle_jsonrpc(request: JSONRPCRequest):
+    """Handle JSON-RPC 2.0 requests"""
+    if request.jsonrpc != "2.0":
+        return JSONResponse(
+            status_code=400,
+            content={
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32600,
+                    "message": "Invalid Request",
+                    "data": "jsonrpc version must be 2.0"
+                },
+                "id": request.id
+            }
+        )
+    
+    handler = {
+        "initialize": handle_initialize,
+        "tools/list": handle_tools_list,
+        "tools/call": handle_tools_call,
+        "resources/list": handle_resources_list,
+    }.get(request.method)
+    
+    if not handler:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32601,
+                    "message": "Method not found"
+                },
+                "id": request.id
+            }
+        )
+    
+    try:
+        result = await handler(request.params or {})
+        return {
+            "jsonrpc": "2.0",
+            "result": result,
+            "id": request.id
+        }
+    except Exception as e:
+        logger.error(f"Error handling {request.method}: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32000,
+                    "message": "Internal error",
+                    "data": str(e)
+                },
+                "id": request.id
+            }
+        )
+
+# MCP Handlers
+async def handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle initialize method"""
+    return {
+        "name": "liquidation-map-mcp",
+        "description": "MCP server for cryptocurrency liquidation heatmaps",
+        "version": "0.1.0"
+    }
+
+async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle tools/list method"""
+    return {"tools": [{"name": name, **info} for name, info in TOOLS.items()]}
+
+async def handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle tools/call method"""
+    tool_name = params.get("name")
+    tool_args = params.get("arguments", {})
+    
+    if tool_name not in TOOLS:
+        raise HTTPException(status_code=404, detail=f"Tool {tool_name} not found")
+    
+    if tool_name == "get_liquidation_map":
+        return await get_liquidation_map_handler(tool_args)
+    
+    raise HTTPException(status_code=400, detail=f"Unhandled tool: {tool_name}")
+
+async def handle_resources_list(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle resources/list method"""
+    return {"resources": []}
+
+# Request model for liquidation map
 
 def setup_webdriver(max_retries=5, retry_delay=2):
     """Configure and return a remote Chrome WebDriver instance with retries"""
@@ -265,53 +399,72 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
         if driver:
             driver.quit()
 
-@app.post("/get-liquidation-map")
-async def get_liquidation_map(request: LiquidationMapRequest):
-    """
-    Get a liquidation heatmap for a given symbol and timeframe
+async def get_liquidation_map_handler(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle get_liquidation_map tool call"""
+    symbol = args.get("symbol", "BTC").upper()
+    timeframe = args.get("timeframe", "24 hour").lower()
     
-    Example request body:
-    {
-        "symbol": "BTC",
-        "timeframe": "24 hour"
+    logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
+    
+    # Get the heatmap image
+    image_data = await capture_coinglass_heatmap(symbol, timeframe)
+    
+    if not image_data:
+        raise HTTPException(status_code=500, detail="Failed to generate liquidation map")
+    
+    # Convert image to base64 for JSON-RPC response
+    image_base64 = base64.b64encode(image_data).decode('utf-8')
+    
+    # Get current price
+    price = get_crypto_price(symbol)
+    
+    return {
+        "image": f"data:image/png;base64,{image_base64}",
+        "metadata": {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "price": price
+        }
     }
-    """
-    try:
-        symbol = request.symbol.upper()
-        timeframe = request.timeframe.lower()
-        
-        logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
-        
-        # Get the heatmap image
-        image_data = await capture_coinglass_heatmap(symbol, timeframe)
-        
-        if image_data:
-            # Get current price
-            price = get_crypto_price(symbol)
-            price_text = f"Current {symbol} price: {price}\\n" if price else ""
-            
-            # Return the image with metadata
-            return StreamingResponse(
-                BytesIO(image_data),
-                media_type="image/png",
-                headers={
-                    "X-Symbol": symbol,
-                    "X-Timeframe": timeframe,
-                    "X-Price": price or "N/A"
-                }
-            )
-        else:
-            raise HTTPException(status_code=500, detail="Failed to generate liquidation map")
-    except Exception as e:
-        logger.error(f"Error in get_liquidation_map: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "ok"}
 
+# Legacy endpoint for backward compatibility
+@app.post("/get-liquidation-map")
+async def legacy_get_liquidation_map(request: Request):
+    """Legacy endpoint for backward compatibility"""
+    try:
+        data = await request.json()
+        symbol = data.get("symbol", "BTC").upper()
+        timeframe = data.get("timeframe", "24 hour").lower()
+        
+        image_data = await capture_coinglass_heatmap(symbol, timeframe)
+        if not image_data:
+            raise HTTPException(status_code=500, detail="Failed to generate liquidation map")
+            
+        price = get_crypto_price(symbol)
+        return StreamingResponse(
+            BytesIO(image_data),
+            media_type="image/png",
+            headers={
+                "X-Symbol": symbol,
+                "X-Timeframe": timeframe,
+                "X-Price": price or "N/A"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error in legacy endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting Liquidation Map MCP Server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app,
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", "8000")),
+        log_level=os.getenv("LOG_LEVEL", "info").lower()
+    )

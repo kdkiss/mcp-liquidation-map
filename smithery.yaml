@@ -1,0 +1,33 @@
+name: mcp-liquidation-map
+description: MCP server for cryptocurrency liquidation heatmaps
+version: 0.1.0
+
+runtime:
+  python: "3.9"
+
+build:
+  dockerfile: Dockerfile
+  context: .
+
+mcp:
+  version: "1.0"
+  tools:
+    - name: get_liquidation_map
+      description: Get a liquidation heatmap for a cryptocurrency
+      parameters:
+        type: object
+        properties:
+          symbol:
+            type: string
+            description: Cryptocurrency symbol (e.g., BTC, ETH)
+          timeframe:
+            type: string
+            description: Time period for the heatmap (e.g., "12 hour", "24 hour", "1 month")
+            enum: ["12 hour", "24 hour", "1 month", "3 month"]
+        required:
+          - symbol
+          - timeframe
+      returns:
+        type: string
+        format: binary
+        description: PNG image of the liquidation heatmap
