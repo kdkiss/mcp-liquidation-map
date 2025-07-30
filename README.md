@@ -1,5 +1,7 @@
 # Liquidation Map MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@kdkiss/mcp-liquidation-map)](https://smithery.ai/server/@kdkiss/mcp-liquidation-map)
+
 A Smithery-compatible Model Context Protocol (MCP) server that provides cryptocurrency liquidation heatmaps. Users can request liquidation maps for different cryptocurrencies with 12-hour or 24-hour timeframes, and the server returns high-quality images of the liquidation data.
 
 ## Features
@@ -12,6 +14,14 @@ A Smithery-compatible Model Context Protocol (MCP) server that provides cryptocu
 - **FastMCP Integration**: Built using the FastMCP library for simplified development
 
 ## Quick Start
+
+### Installing via Smithery
+
+To install Liquidation Map for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kdkiss/mcp-liquidation-map):
+
+```bash
+npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
+```
 
 ### Option 1: Deploy on Smithery (Recommended)
 
@@ -226,4 +236,3 @@ For issues and questions:
 - [FastMCP](https://gofastmcp.com) for the Python MCP framework
 - [Coinglass](https://www.coinglass.com) for liquidation data
 - [CoinGecko](https://www.coingecko.com) for cryptocurrency price data
-
