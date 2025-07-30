@@ -11,3 +11,5 @@ server:
   install:
     - pip install --no-cache-dir -r requirements.txt
     - playwright install --with-deps
+tools:
+  filter: ["get_liquidation_map"]
