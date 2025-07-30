@@ -112,8 +112,9 @@ class LiquidationMapMCPServer:
                 symbol,
                 time_period,
             )
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(
+            playwright = await async_playwright()
+            async with playwright:
+                browser = await playwright.chromium.launch(
                     headless=True,
                     args=["--no-sandbox", "--disable-dev-shm-usage"],
                 )
