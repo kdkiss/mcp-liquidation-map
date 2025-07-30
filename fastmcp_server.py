@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 mcp: FastMCP | None = None
 
 
+
 def get_server_info() -> dict:
     """Return basic server info for Smithery scanning."""
     return {
@@ -129,12 +130,14 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
 
                 return png_data
 
+
     except Exception as e:
         logger.error(f"Error capturing heatmap: {e}")
         raise RuntimeError(f"Error capturing heatmap: {e}")
 
 
 async def get_liquidation_map(symbol: str, timeframe: str) -> str:
+>>>>>> main
     """
     Get a liquidation heatmap for a cryptocurrency.
     
@@ -157,6 +160,7 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     # Get the heatmap image
     try:
         image_data = await capture_coinglass_heatmap(symbol, timeframe)
+        await ctx.report_progress(progress=50, total=100, message="Capturing heatmap")
     except Exception as e:
         raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
 
@@ -165,6 +169,7 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     
     # Convert image to base64
     image_base64 = base64.b64encode(image_data).decode('utf-8')
+    await ctx.report_progress(progress=100, total=100, message="Encoding image")
     
     # Get current price
     price = get_crypto_price(symbol)
@@ -187,6 +192,7 @@ def create_server() -> FastMCP:
         mcp.tool()(get_liquidation_map)
         # Provide server info for Smithery scanning
         mcp.get_server_info = get_server_info  # type: ignore[attr-defined]
+
     return mcp
 
 if __name__ == "__main__":

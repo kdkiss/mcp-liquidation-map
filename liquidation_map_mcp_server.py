@@ -6,8 +6,13 @@ Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corre
 
 import logging
 import requests
+
 import base64
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+from io import BytesIO
+from PIL import Image
+
 
 # Configure logging
 logging.basicConfig(
@@ -59,7 +64,43 @@ class LiquidationMapMCPServer:
             }
         }
     
-
+    def setup_webdriver(self, max_retries=3, retry_delay=2):
+        """Configure and return a local Chrome WebDriver instance with retries using webdriver-manager"""
+        try:
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service as ChromeService
+            
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--disable-extensions")
+            
+            for attempt in range(max_retries):
+                try:
+                    logger.info(f"Creating ChromeDriver instance with webdriver-manager (attempt {attempt+1}/{max_retries})")
+                    
+                    # Use webdriver-manager to automatically download and manage ChromeDriver
+                    service = ChromeService(ChromeDriverManager().install())
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                    
+                    logger.info("Successfully created ChromeDriver instance")
+                    return driver
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to create ChromeDriver: {e}")
+                    if attempt < max_retries - 1:
+                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        logger.error("Max retries exceeded. Could not create ChromeDriver.")
+                        raise
+                        
+        except ImportError:
+            logger.error("webdriver-manager not found. Please install it with: pip install webdriver-manager")
+            raise
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
@@ -94,7 +135,17 @@ class LiquidationMapMCPServer:
             return None
 
     async def capture_coinglass_heatmap(self, symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
-        """Capture the Coinglass liquidation heatmap using Playwright."""
+        """
+        Capture the Coinglass liquidation heatmap
+        
+        Args:
+            symbol (str): Cryptocurrency symbol (e.g., "BTC", "ETH")
+            time_period (str): Time period to select (e.g., "24 hour", "12 hour")
+            
+        Returns:
+            bytes: PNG image data
+        """
+        driver = None
         try:
             from playwright.async_api import async_playwright
             logger.info(
@@ -157,10 +208,13 @@ class LiquidationMapMCPServer:
 
                     return png_data
 
+
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
-            raise RuntimeError(f"Error capturing heatmap: {e}")
-
+            return None
+        finally:
+            if driver:
+                driver.quit()
 
     async def get_liquidation_map(self, symbol: str, timeframe: str) -> Dict[str, Any]:
         """Handle get_liquidation_map tool call"""
@@ -174,13 +228,10 @@ class LiquidationMapMCPServer:
         logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
         
         # Get the heatmap image
-        try:
-            image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
-        except Exception as e:
-            raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
-
+        image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
+        
         if not image_data:
-            raise RuntimeError("Failed to generate liquidation map: no image data")
+            raise Exception("Failed to generate liquidation map")
         
         # Convert image to base64 for JSON-RPC response
         image_base64 = base64.b64encode(image_data).decode('utf-8')
