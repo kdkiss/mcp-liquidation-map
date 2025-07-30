@@ -76,6 +76,8 @@ async def capture_coinglass_heatmap(
 ) -> bytes:
     """Capture the Coinglass liquidation heatmap using Playwright."""
     try:
+        if ctx:
+            await ctx.report_progress(5, 100, "Launching browser")
 
         from playwright.async_api import async_playwright
         logger.info(
@@ -202,7 +204,9 @@ def create_server() -> FastMCP:
     """Create and return the MCP server instance."""
     global mcp
     if mcp is None:
-        mcp = FastMCP("Liquidation Map Server", request_timeout=120)
+        mcp = FastMCP("Liquidation Map Server")
+        if hasattr(mcp, "request_timeout"):
+            mcp.request_timeout = 120
 
         # register tools lazily
         mcp.tool()(get_liquidation_map)

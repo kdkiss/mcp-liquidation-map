@@ -15,6 +15,8 @@ from PIL import Image
 
 from fastmcp import Context
 
+from fastmcp import Context
+
 
 # Configure logging
 logging.basicConfig(
