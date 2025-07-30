@@ -86,6 +86,7 @@ async def capture_coinglass_heatmap(
         playwright = await async_playwright()
         async with playwright:
             browser = await playwright.chromium.launch(
+
                 headless=True,
                 args=["--no-sandbox", "--disable-dev-shm-usage"],
             )
