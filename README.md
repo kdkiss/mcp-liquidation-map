@@ -150,7 +150,9 @@ The server supports all major cryptocurrencies available on Coinglass, including
 
 ### Docker Configuration
 
-The included Dockerfile provides a complete containerized environment:
+The included Dockerfile provides a complete containerized environment. It
+automatically installs a ChromeDriver version that matches the Chrome browser
+installed in the image:
 
 ```dockerfile
 FROM python:3.11-slim
