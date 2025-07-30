@@ -162,8 +162,13 @@ async def handle_jsonrpc(request: JSONRPCRequest):
         )
 
 # MCP Handlers
-async def handle_initialize():
-    """Handle initialize method"""
+async def handle_initialize(params: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Handle initialize method
+    
+    Args:
+        params: Optional parameters from the MCP client (unused in this implementation)
+    """
+    # params is unused but required by the MCP protocol
     return {
         "protocolVersion": "1.0",
         "serverInfo": {
