@@ -104,9 +104,9 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
             if current_time != time_period:
                 await page.click("div.MuiSelect-root button.MuiSelect-button")
                 await page.wait_for_timeout(2000)
-                await page.evaluate(
-                    '(tp) => { const opts = document.querySelectorAll("li[role=\"option\"]"); for (const o of opts) { if (o.textContent.includes(tp)) { o.click(); break; } } }',
-                    time_period,
+                await page.click(
+                    f"//li[@role='option' and contains(text(), '{time_period}')]"
+
                 )
                 await page.wait_for_timeout(3000)
     
