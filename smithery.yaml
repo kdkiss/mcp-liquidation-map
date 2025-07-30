@@ -1,17 +1,15 @@
-# Smithery configuration file: https://smithery.ai/docs/build/project-config
-
-startCommand:
-  type: stdio
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({
-      command: 'python',
-      args: ['fastmcp_server.py']
-
-    })
-  configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
-    properties: {}
-  exampleConfig: {}
+name: mcp-liquidation-map
+type: server
+entry: fastmcp_server.py
+server:
+  mcpVersion: 2
+  timeout: 120
+  requestTimeout: 120
+  image: python:3.11-slim
+  port: 8000
+  usePlaywright: true
+  install:
+    - pip install --no-cache-dir -r requirements.txt
+    - playwright install --with-deps
+tools:
+  filter: ["get_liquidation_map"]
