@@ -101,7 +101,7 @@ class LiquidationMapMCPServer:
                 else:
                     logger.info("No ChromeDriver found, falling back to Selenium Manager")
                     driver = webdriver.Chrome(options=chrome_options)
-
+                    
                 logger.info("Successfully created ChromeDriver instance")
                 return driver
                 
