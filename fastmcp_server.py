@@ -133,9 +133,9 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
         logger.error(f"Error capturing heatmap: {e}")
         raise RuntimeError(f"Error capturing heatmap: {e}")
 
-
 @mcp.tool()
-async def get_liquidation_map(symbol: str, timeframe: str) -> str:
+async def get_liquidation_map(symbol: str, timeframe: str, ctx: Context) -> dict:
+    await ctx.report_progress(progress=0, total=100, message="Launching browser")
     """
     Get a liquidation heatmap for a cryptocurrency.
     
@@ -158,6 +158,7 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     # Get the heatmap image
     try:
         image_data = await capture_coinglass_heatmap(symbol, timeframe)
+        await ctx.report_progress(progress=50, total=100, message="Capturing heatmap")
     except Exception as e:
         raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
 
@@ -166,6 +167,7 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     
     # Convert image to base64
     image_base64 = base64.b64encode(image_data).decode('utf-8')
+    await ctx.report_progress(progress=100, total=100, message="Encoding image")
     
     # Get current price
     price = get_crypto_price(symbol)
