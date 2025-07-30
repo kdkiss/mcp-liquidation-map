@@ -1,8 +1,3 @@
-name: mcp-liquidation-map
-version: "1.0.0"
-
+name: test
 build:
   dockerfile: Dockerfile
-
-runtime:
-  port: 8000
