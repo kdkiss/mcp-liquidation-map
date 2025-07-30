@@ -33,6 +33,7 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
    `/usr/local/bin/chromedriver` so ChromeDriver works out of the box. If you
    use a custom path or your environment is offline, update `smithery.yaml`
    accordingly and ensure ChromeDriver is pre-installed at that location.
+
 6. Use the provided URL to connect to your server from any MCP-compatible client
 
 ### Option 2: Local Development
@@ -144,6 +145,7 @@ The server supports all major cryptocurrencies available on Coinglass, including
 ### Environment Variables
 
  - `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`). If the path doesn't exist, Selenium Manager will try to download a compatible driver. For offline setups, install ChromeDriver manually and set this path.
+
  - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
 ### Docker Configuration
