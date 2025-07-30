@@ -51,7 +51,7 @@ async def test_liquidation_map_tool():
     # Test with BTC 24 hour
     try:
         print("Testing BTC 24 hour liquidation map...")
-        result = await server.get_liquidation_map("BTC", "24 hour")
+        result = await server.get_liquidation_map(None, "BTC", "24 hour")
         
         if "content" in result and len(result["content"]) > 0:
             # Check if we have image content
@@ -87,7 +87,7 @@ async def test_liquidation_map_tool():
     # Test with ETH 12 hour
     try:
         print("\nTesting ETH 12 hour liquidation map...")
-        result = await server.get_liquidation_map("ETH", "12 hour")
+        result = await server.get_liquidation_map(None, "ETH", "12 hour")
         
         if "content" in result and len(result["content"]) > 0:
             # Check if we have image content
@@ -121,7 +121,7 @@ async def test_invalid_inputs():
     
     # Test invalid timeframe
     try:
-        await server.get_liquidation_map("BTC", "1 week")
+        await server.get_liquidation_map(None, "BTC", "1 week")
         print("✗ Should have failed with invalid timeframe")
     except ValueError as e:
         print(f"✓ Correctly rejected invalid timeframe: {e}")

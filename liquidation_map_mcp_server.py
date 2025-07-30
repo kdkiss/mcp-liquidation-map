@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional, Union
 from io import BytesIO
 from PIL import Image
 
+from fastmcp import Context
+
 
 # Configure logging
 logging.basicConfig(
@@ -134,19 +136,17 @@ class LiquidationMapMCPServer:
             logger.error(f"Error fetching {symbol} price: {e}")
             return None
 
-    async def capture_coinglass_heatmap(self, symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
-        """
-        Capture the Coinglass liquidation heatmap
-        
-        Args:
-            symbol (str): Cryptocurrency symbol (e.g., "BTC", "ETH")
-            time_period (str): Time period to select (e.g., "24 hour", "12 hour")
-            
-        Returns:
-            bytes: PNG image data
-        """
-        driver = None
+    async def capture_coinglass_heatmap(
+        self,
+        symbol: str = "BTC",
+        time_period: str = "24 hour",
+        ctx: Context | None = None,
+    ) -> bytes:
+        """Capture the Coinglass liquidation heatmap using Playwright."""
         try:
+            if ctx:
+                await ctx.report_progress(5, 100, "Launching browser")
+
             from playwright.async_api import async_playwright
             logger.info(
                 f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
@@ -162,6 +162,8 @@ class LiquidationMapMCPServer:
                         "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
                         timeout=60000,
                     )
+                    if ctx:
+                        await ctx.report_progress(25, 100, "Page loaded")
 
                     await page.add_style_tag(
                         content="""
@@ -205,6 +207,8 @@ class LiquidationMapMCPServer:
                     box = await heatmap.bounding_box()
 
                     png_data = await page.screenshot(clip=box, type="png")
+                    if ctx:
+                        await ctx.report_progress(90, 100, "Screenshot captured")
 
                     return png_data
 
@@ -216,7 +220,9 @@ class LiquidationMapMCPServer:
             if driver:
                 driver.quit()
 
-    async def get_liquidation_map(self, symbol: str, timeframe: str) -> Dict[str, Any]:
+    async def get_liquidation_map(
+        self, ctx: Context | None, symbol: str, timeframe: str
+    ) -> Dict[str, Any]:
         """Handle get_liquidation_map tool call"""
         symbol = symbol.upper()
         timeframe = timeframe.lower()
@@ -226,19 +232,30 @@ class LiquidationMapMCPServer:
             raise ValueError(f"Invalid timeframe: {timeframe}. Must be '12 hour' or '24 hour'")
         
         logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
+        if ctx:
+            await ctx.report_progress(0, 100, "Starting")
         
         # Get the heatmap image
-        image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
-        
+        try:
+            image_data = await self.capture_coinglass_heatmap(symbol, timeframe, ctx)
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
+
+
         if not image_data:
             raise Exception("Failed to generate liquidation map")
         
         # Convert image to base64 for JSON-RPC response
         image_base64 = base64.b64encode(image_data).decode('utf-8')
+        if ctx:
+            await ctx.report_progress(95, 100, "Preparing result")
         
         # Get current price
         price = self.get_crypto_price(symbol)
-        
+
+        if ctx:
+            await ctx.report_progress(100, 100, "Done")
+
         return {
             "content": [
                 {

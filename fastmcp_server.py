@@ -10,7 +10,8 @@ import logging
 from typing import Optional
 
 import requests
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
+
 
 # Configure logging
 logging.basicConfig(
@@ -68,9 +69,14 @@ def get_crypto_price(symbol: str) -> Optional[str]:
         logger.error(f"Error fetching {symbol} price: {e}")
         return None
 
-async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
+async def capture_coinglass_heatmap(
+    symbol: str = "BTC",
+    time_period: str = "24 hour",
+    ctx: Context | None = None,
+) -> bytes:
     """Capture the Coinglass liquidation heatmap using Playwright."""
     try:
+
         from playwright.async_api import async_playwright
         logger.info(
             f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
@@ -86,6 +92,9 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                     "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
                     timeout=60000,
                 )
+                if ctx:
+                    await ctx.report_progress(25, 100, "Page loaded")
+
 
                 await page.add_style_tag(
                     content="""
@@ -127,6 +136,8 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                 box = await heatmap.bounding_box()
 
                 png_data = await page.screenshot(clip=box, type="png")
+                if ctx:
+                    await ctx.report_progress(90, 100, "Screenshot captured")
 
                 return png_data
 
@@ -136,8 +147,8 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
         raise RuntimeError(f"Error capturing heatmap: {e}")
 
 
-async def get_liquidation_map(symbol: str, timeframe: str) -> str:
->>>>>> main
+async def get_liquidation_map(ctx: Context, symbol: str, timeframe: str) -> str:
+
     """
     Get a liquidation heatmap for a cryptocurrency.
     
@@ -156,16 +167,18 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
         raise ValueError(f"Invalid timeframe: {timeframe}. Must be '12 hour' or '24 hour'")
     
     logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
+    await ctx.report_progress(0, 100, "Starting")
     
     # Get the heatmap image
     try:
-        image_data = await capture_coinglass_heatmap(symbol, timeframe)
-        await ctx.report_progress(progress=50, total=100, message="Capturing heatmap")
+        image_data = await capture_coinglass_heatmap(symbol, timeframe, ctx)
+
     except Exception as e:
         raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
 
     if not image_data:
         raise RuntimeError("Failed to generate liquidation map: no image data")
+    await ctx.report_progress(95, 100, "Preparing result")
     
     # Convert image to base64
     image_base64 = base64.b64encode(image_data).decode('utf-8')
@@ -180,6 +193,8 @@ async def get_liquidation_map(symbol: str, timeframe: str) -> str:
     
     result += f"\n\nImage data (base64): data:image/png;base64,{image_base64}"
 
+    await ctx.report_progress(100, 100, "Done")
+
     return result
 
 
@@ -187,7 +202,8 @@ def create_server() -> FastMCP:
     """Create and return the MCP server instance."""
     global mcp
     if mcp is None:
-        mcp = FastMCP("Liquidation Map Server")
+        mcp = FastMCP("Liquidation Map Server", request_timeout=120)
+
         # register tools lazily
         mcp.tool()(get_liquidation_map)
         # Provide server info for Smithery scanning
