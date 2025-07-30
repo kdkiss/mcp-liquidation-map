@@ -1,0 +1,64 @@
+# .smithery/build.yaml
+apiVersion: smithery.ai/v1
+kind: Build
+metadata:
+  name: liquidation-tracker
+  
+spec:
+  # Build configuration
+  build:
+    dockerfile: Dockerfile
+    context: "."
+    args: {}
+    
+  # Base image and dependencies
+  base:
+    image: python:3.9-slim
+    
+  # Build steps
+  steps:
+    - name: install-system-deps
+      run: |
+        apt-get update && apt-get install -y \
+          wget gnupg curl unzip xvfb xauth \
+          xfonts-100dpi xfonts-75dpi xfonts-scalable \
+          xfonts-cyrillic x11-apps \
+          && rm -rf /var/lib/apt/lists/*
+          
+    - name: install-chrome
+      run: |
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+        && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+        && apt-get update \
+        && apt-get install -y google-chrome-stable \
+        && rm -rf /var/lib/apt/lists/*
+        
+    - name: install-chromedriver
+      run: |
+        wget -q "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip" \
+        && unzip chromedriver_linux64.zip \
+        && mv chromedriver /usr/local/bin/chromedriver \
+        && chmod +x /usr/local/bin/chromedriver \
+        && rm chromedriver_linux64.zip
+        
+    - name: install-python-deps
+      run: pip install --no-cache-dir -r requirements.txt
+      
+  # Runtime configuration  
+  runtime:
+    port: 8000
+    command: |
+      Xvfb :99 -screen 0 1024x768x16 & \
+      export DISPLAY=:99 && \
+      uvicorn main:app --host 0.0.0.0 --port 8000
+      
+    environment:
+      DISPLAY: ":99"
+      DBUS_SESSION_BUS_ADDRESS: "/dev/null"
+      CHROME_BIN: "/usr/bin/google-chrome"
+      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

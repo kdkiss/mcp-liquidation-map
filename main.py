@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -179,36 +180,38 @@ async def handle_resources_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """Handle resources/list method"""
     return {"resources": []}
 
-# Request model for liquidation map
-
-def setup_webdriver(max_retries=5, retry_delay=2):
-    """Configure and return a remote Chrome WebDriver instance with retries"""
+def setup_webdriver(max_retries=3, retry_delay=2):
+    """Configure and return a local Chrome WebDriver instance with retries"""
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=5400,2950")
     chrome_options.add_argument("--force-device-scale-factor=2")
-    
-    selenium_host = 'localhost'
-    selenium_port = '4444'
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-plugins")
+    chrome_options.add_argument("--disable-images")
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
     
     for attempt in range(max_retries):
         try:
-            logger.info(f"Connecting to Selenium at http://{selenium_host}:{selenium_port}/wd/hub (attempt {attempt+1}/{max_retries})")
-            driver = webdriver.Remote(
-                command_executor=f'http://{selenium_host}:{selenium_port}/wd/hub',
-                options=chrome_options
-            )
-            logger.info("Successfully connected to Selenium")
+            logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
+            
+            # Use local ChromeDriver service
+            service = Service('/usr/local/bin/chromedriver')
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            logger.info("Successfully created ChromeDriver instance")
             return driver
+            
         except Exception as e:
-            logger.warning(f"Failed to connect to Selenium: {e}")
+            logger.warning(f"Failed to create ChromeDriver: {e}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
-                logger.error("Max retries exceeded. Could not connect to Selenium.")
+                logger.error("Max retries exceeded. Could not create ChromeDriver.")
                 raise
 
 def get_crypto_price(symbol: str) -> Optional[str]:

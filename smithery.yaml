@@ -1,0 +1,37 @@
+name: liquidation-tracker
+version: "1.0.0"
+description: "MCP server for tracking liquidation data with Selenium"
+
+# Build configuration
+build:
+  dockerfile: Dockerfile
+  context: .
+  
+# Runtime configuration
+runtime:
+  port: 8000
+  health_check:
+    path: /health
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    
+# Environment variables (if needed)
+environment:
+  - DISPLAY=:99
+  - DBUS_SESSION_BUS_ADDRESS=/dev/null
+  - CHROME_BIN=/usr/bin/google-chrome
+  
+# Resource limits
+resources:
+  memory: 2Gi
+  cpu: 1000m
+
+# Dependencies/services (if using external services)
+# services:
+#   - selenium-grid
+
+# Volume mounts (if needed)
+# volumes:
+#   - name: data
+#     path: /app/data
