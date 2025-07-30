@@ -1,17 +1,12 @@
 FROM python:3.9-slim
 
-# Install system dependencies
+# Install minimal system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     unzip \
     xvfb \
     xauth \
-    xfonts-100dpi \
-    xfonts-75dpi \
-    xfonts-scalable \
-    xfonts-cyrillic \
-    x11-apps \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
