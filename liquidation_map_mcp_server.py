@@ -4,17 +4,11 @@ Smithery-compatible MCP Server for Liquidation Maps
 Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corresponding images.
 """
 
-import logging
-import requests
-
 import base64
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
-from io import BytesIO
-from PIL import Image
+import logging
+from typing import Any, Dict, Optional
 
-from fastmcp import Context
-
+import requests
 from fastmcp import Context
 
 
@@ -68,43 +62,6 @@ class LiquidationMapMCPServer:
             }
         }
     
-    def setup_webdriver(self, max_retries=3, retry_delay=2):
-        """Configure and return a local Chrome WebDriver instance with retries using webdriver-manager"""
-        try:
-            from webdriver_manager.chrome import ChromeDriverManager
-            from selenium.webdriver.chrome.service import Service as ChromeService
-            
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--window-size=1920,1080")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--disable-extensions")
-            
-            for attempt in range(max_retries):
-                try:
-                    logger.info(f"Creating ChromeDriver instance with webdriver-manager (attempt {attempt+1}/{max_retries})")
-                    
-                    # Use webdriver-manager to automatically download and manage ChromeDriver
-                    service = ChromeService(ChromeDriverManager().install())
-                    driver = webdriver.Chrome(service=service, options=chrome_options)
-                    
-                    logger.info("Successfully created ChromeDriver instance")
-                    return driver
-                    
-                except Exception as e:
-                    logger.warning(f"Failed to create ChromeDriver: {e}")
-                    if attempt < max_retries - 1:
-                        logger.info(f"Retrying in {retry_delay} seconds...")
-                        time.sleep(retry_delay)
-                    else:
-                        logger.error("Max retries exceeded. Could not create ChromeDriver.")
-                        raise
-                        
-        except ImportError:
-            logger.error("webdriver-manager not found. Please install it with: pip install webdriver-manager")
-            raise
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
@@ -147,16 +104,22 @@ class LiquidationMapMCPServer:
         """Capture the Coinglass liquidation heatmap using Playwright."""
         try:
             if ctx:
-                await ctx.report_progress(5, 100, "Launching browser")
+                await ctx.report_progress(5, 100, "Starting Playwright...")
 
             from playwright.async_api import async_playwright
             logger.info(
-                f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
+                "Starting capture of Coinglass %s heatmap with %s timeframe",
+                symbol,
+                time_period,
             )
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(
+                    headless=True,
+                    args=["--no-sandbox", "--disable-dev-shm-usage"],
+                )
                 async with browser.new_context(
-                    viewport={"width": 1920, "height": 1080}, device_scale_factor=2
+                    viewport={"width": 1920, "height": 1080},
+                    device_scale_factor=2,
                 ) as context:
                     page = await context.new_page()
 
@@ -176,12 +139,18 @@ class LiquidationMapMCPServer:
                     )
 
                     await page.wait_for_load_state("networkidle")
-                    await page.wait_for_selector("div.MuiSelect-root button.MuiSelect-button")
+                    await page.wait_for_selector(
+                        "div.MuiSelect-root button.MuiSelect-button",
+                        timeout=10000,
+                    )
 
                     if symbol != "BTC":
                         try:
                             await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
-                            await page.wait_for_selector("input.MuiAutocomplete-input")
+                            await page.wait_for_selector(
+                                "input.MuiAutocomplete-input",
+                                timeout=10000,
+                            )
                             await page.fill("input.MuiAutocomplete-input", symbol)
                             try:
                                 await page.click(
@@ -199,13 +168,16 @@ class LiquidationMapMCPServer:
                     ).strip()
                     if current_time != time_period:
                         await page.click("div.MuiSelect-root button.MuiSelect-button")
-                        await page.wait_for_selector("li[role='option']")
+                        await page.wait_for_selector("li[role='option']", timeout=10000)
                         await page.click(
                             f"//li[@role='option' and contains(text(), '{time_period}')]",
                         )
                         await page.wait_for_load_state("networkidle")
 
-                    heatmap = await page.wait_for_selector("div.echarts-for-react")
+                    heatmap = await page.wait_for_selector(
+                        "div.echarts-for-react",
+                        timeout=10000,
+                    )
                     box = await heatmap.bounding_box()
 
                     png_data = await page.screenshot(clip=box, type="png")
@@ -214,13 +186,9 @@ class LiquidationMapMCPServer:
 
                     return png_data
 
-
         except Exception as e:
-            logger.error(f"Error capturing heatmap: {e}")
-            return None
-        finally:
-            if driver:
-                driver.quit()
+            logger.error("Error capturing heatmap: %s", e)
+            raise RuntimeError(f"Error capturing heatmap: {e}") from e
 
     async def get_liquidation_map(
         self, ctx: Context | None, symbol: str, timeframe: str
@@ -298,4 +266,3 @@ if __name__ == "__main__":
         print("Tool result:", result)
     
     asyncio.run(test_server())
-
