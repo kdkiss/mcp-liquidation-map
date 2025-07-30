@@ -5,11 +5,5 @@ server:
   mcpVersion: 2
   timeout: 120
   requestTimeout: 120
-  image: python:3.11-slim
   port: 8000
   usePlaywright: true
-  install:
-    - pip install --no-cache-dir -r requirements.txt
-    - playwright install --with-deps
-tools:
-  filter: ["get_liquidation_map"]
