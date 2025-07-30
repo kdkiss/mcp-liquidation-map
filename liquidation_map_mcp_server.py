@@ -88,7 +88,7 @@ class LiquidationMapMCPServer:
                 logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
                 
                 # Use ChromeDriver from environment or default path
-                chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
+                chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
                 service = Service(chromedriver_path)
                 driver = webdriver.Chrome(service=service, options=chrome_options)
                 
