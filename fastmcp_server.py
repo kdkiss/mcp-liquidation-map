@@ -74,7 +74,10 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
             )
             page = await context.new_page()
 
-            await page.goto("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
+            await page.goto(
+                "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
+                timeout=60000,
+            )
 
             await page.add_style_tag(
                 content="""
@@ -84,7 +87,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                 """
             )
 
-            await page.wait_for_timeout(5000)
+            await page.wait_for_load_state("networkidle")
         
             if symbol != "BTC":
                 try:
@@ -93,22 +96,26 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                     await page.fill("input.MuiAutocomplete-input", symbol)
                     await page.wait_for_timeout(2000)
                     try:
-                        await page.click(f"//li[@role='option' and text()='{symbol}']")
+                        await page.click(
+                            f"//li[@role='option' and text()='{symbol}']",
+                            timeout=5000,
+                        )
                     except Exception:
                         await page.keyboard.press("Enter")
-                    await page.wait_for_timeout(15000)
+                    await page.wait_for_load_state("networkidle")
+
                 except Exception as symbol_e:
                     logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
     
             current_time = (await page.inner_text("div.MuiSelect-root button.MuiSelect-button")).strip()
             if current_time != time_period:
                 await page.click("div.MuiSelect-root button.MuiSelect-button")
-                await page.wait_for_timeout(2000)
+                await page.wait_for_selector("li[role='option']")
                 await page.click(
                     f"//li[@role='option' and contains(text(), '{time_period}')]"
-
                 )
-                await page.wait_for_timeout(3000)
+                await page.wait_for_load_state("networkidle")
+
     
             heatmap = await page.wait_for_selector("div.echarts-for-react")
             box = await heatmap.bounding_box()
