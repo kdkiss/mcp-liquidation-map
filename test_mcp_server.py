@@ -122,10 +122,16 @@ async def main():
     print("=" * 50)
     
     # Set environment variable for ChromeDriver
-    os.environ['CHROMEDRIVER_PATH'] = '/usr/local/bin/chromedriver'
-    
+    os.environ.setdefault("CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver")
+
     await test_server_basic()
-    await test_liquidation_map_tool()
+
+    chromedriver_path = os.environ["CHROMEDRIVER_PATH"]
+    if not os.path.exists(chromedriver_path):
+        print(f"ChromeDriver not found at {chromedriver_path}. Skipping tool tests.")
+    else:
+        await test_liquidation_map_tool()
+
     await test_invalid_inputs()
     
     print("\n" + "=" * 50)

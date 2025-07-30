@@ -85,13 +85,26 @@ class LiquidationMapMCPServer:
         
         for attempt in range(max_retries):
             try:
-                logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
-                
-                # Use ChromeDriver from environment or default path
-                chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-                service = Service(chromedriver_path)
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                
+                logger.info(
+                    f"Creating local ChromeDriver instance (attempt {attempt + 1}/{max_retries})"
+                )
+
+                # Use ChromeDriver from environment if provided
+                chromedriver_path = os.environ.get(
+                    "CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver"
+                )
+
+                if chromedriver_path and os.path.exists(chromedriver_path):
+                    logger.info(f"Using ChromeDriver at {chromedriver_path}")
+                    service = Service(chromedriver_path)
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                else:
+                    logger.info(
+                        f"ChromeDriver not found at {chromedriver_path}. "
+                        "Falling back to Selenium Manager"
+                    )
+                    driver = webdriver.Chrome(options=chrome_options)
+
                 logger.info("Successfully created ChromeDriver instance")
                 return driver
                 
@@ -102,7 +115,12 @@ class LiquidationMapMCPServer:
                     time.sleep(retry_delay)
                 else:
                     logger.error("Max retries exceeded. Could not create ChromeDriver.")
-                    raise
+                    raise RuntimeError(
+                        "ChromeDriver could not be started. "
+                        "Ensure ChromeDriver is installed and the CHROMEDRIVER_PATH "
+                        "environment variable points to it. If running offline, pre-install "
+                        "ChromeDriver instead of relying on Selenium Manager."
+                    )
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
@@ -287,7 +305,7 @@ class LiquidationMapMCPServer:
             
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
-            return None
+            raise RuntimeError(f"Error capturing heatmap: {e}")
         finally:
             if driver:
                 driver.quit()
@@ -304,10 +322,13 @@ class LiquidationMapMCPServer:
         logger.info(f"Generating {symbol} liquidation heatmap for {timeframe}")
         
         # Get the heatmap image
-        image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
-        
+        try:
+            image_data = await self.capture_coinglass_heatmap(symbol, timeframe)
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate liquidation map: {e}") from e
+
         if not image_data:
-            raise Exception("Failed to generate liquidation map")
+            raise RuntimeError("Failed to generate liquidation map: no image data")
         
         # Convert image to base64 for JSON-RPC response
         image_base64 = base64.b64encode(image_data).decode('utf-8')
