@@ -35,7 +35,8 @@ class LiquidationMapMCPServer:
         return {
             "name": self.name,
             "version": self.version,
-            "description": self.description
+            "description": self.description,
+            "connectionTypes": {"stdio": {}},
         }
     
     def get_capabilities(self) -> Dict[str, Any]:
@@ -161,7 +162,6 @@ class LiquidationMapMCPServer:
                         "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
                         timeout=60000,
                     )
-
 
                     await page.add_style_tag(
                         content="""

@@ -28,6 +28,16 @@ mcp = FastMCP(
 )
 
 
+def get_server_info() -> dict:
+    """Return basic server info for Smithery scanning."""
+    return {
+        "name": "liquidation-map-server",
+        "version": "1.0.0",
+        "description": "MCP server for generating cryptocurrency liquidation heatmaps",
+        "connectionTypes": {"stdio": {}},
+    }
+
+
 
 def get_crypto_price(symbol: str) -> Optional[str]:
     """Fetch the current crypto price from CoinGecko API"""
