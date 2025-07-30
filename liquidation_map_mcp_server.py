@@ -4,14 +4,10 @@ Smithery-compatible MCP Server for Liquidation Maps
 Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corresponding images.
 """
 
-import os
 import logging
 import requests
-import time
 import base64
 from typing import Any, Dict, Optional
-
-from playwright.async_api import async_playwright
 
 # Configure logging
 logging.basicConfig(
@@ -99,61 +95,66 @@ class LiquidationMapMCPServer:
     async def capture_coinglass_heatmap(self, symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
         """Capture the Coinglass liquidation heatmap using Playwright."""
         try:
+            from playwright.async_api import async_playwright
             logger.info(
                 f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
             )
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
-                context = await browser.new_context(
+                async with browser.new_context(
                     viewport={"width": 1920, "height": 1080}, device_scale_factor=2
-                )
-                page = await context.new_page()
+                ) as context:
+                    page = await context.new_page()
 
-                await page.goto("https://www.coinglass.com/pro/futures/LiquidationHeatMap")
-
-                await page.add_style_tag(
-                    content="""
-                    * { transition: none !important; animation: none !important; }
-                    .echarts-for-react { width: 100% !important; height: 100% !important; }
-                    canvas { image-rendering: -webkit-optimize-contrast !important; image-rendering: crisp-edges !important; }
-                    """
-                )
-
-                await page.wait_for_timeout(5000)
-
-                if symbol != "BTC":
-                    try:
-                        await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
-                        await page.wait_for_timeout(2000)
-                        await page.fill("input.MuiAutocomplete-input", symbol)
-                        await page.wait_for_timeout(2000)
-                        try:
-                            await page.click(f"//li[@role='option' and text()='{symbol}']")
-                        except Exception:
-                            await page.keyboard.press("Enter")
-                        await page.wait_for_timeout(15000)
-                    except Exception as symbol_e:
-                        logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
-
-                current_time = (
-                    await page.inner_text("div.MuiSelect-root button.MuiSelect-button")
-                ).strip()
-                if current_time != time_period:
-                    await page.click("div.MuiSelect-root button.MuiSelect-button")
-                    await page.wait_for_timeout(2000)
-                    await page.evaluate(
-                        "(tp) => { const opts = document.querySelectorAll('li[role=\"option\"]'); for (const o of opts) { if (o.textContent.includes(tp)) { o.click(); break; } } }",
-                        time_period,
+                    await page.goto(
+                        "https://www.coinglass.com/pro/futures/LiquidationHeatMap",
+                        timeout=60000,
                     )
-                    await page.wait_for_timeout(3000)
 
-                heatmap = await page.wait_for_selector("div.echarts-for-react")
-                box = await heatmap.bounding_box()
+                    await page.add_style_tag(
+                        content="""
+                        * { transition: none !important; animation: none !important; }
+                        .echarts-for-react { width: 100% !important; height: 100% !important; }
+                        canvas { image-rendering: -webkit-optimize-contrast !important; image-rendering: crisp-edges !important; }
+                        """
+                    )
 
-                png_data = await page.screenshot(clip=box, type="png")
+                    await page.wait_for_load_state("networkidle")
+                    await page.wait_for_selector("div.MuiSelect-root button.MuiSelect-button")
 
-                await browser.close()
-                return png_data
+                    if symbol != "BTC":
+                        try:
+                            await page.click("//button[@role='tab' and contains(text(), 'Symbol')]")
+                            await page.wait_for_selector("input.MuiAutocomplete-input")
+                            await page.fill("input.MuiAutocomplete-input", symbol)
+                            try:
+                                await page.click(
+                                    f"//li[@role='option' and text()='{symbol}']",
+                                    timeout=5000,
+                                )
+                            except Exception:
+                                await page.keyboard.press("Enter")
+                            await page.wait_for_load_state("networkidle")
+                        except Exception as symbol_e:
+                            logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
+
+                    current_time = (
+                        await page.inner_text("div.MuiSelect-root button.MuiSelect-button")
+                    ).strip()
+                    if current_time != time_period:
+                        await page.click("div.MuiSelect-root button.MuiSelect-button")
+                        await page.wait_for_selector("li[role='option']")
+                        await page.click(
+                            f"//li[@role='option' and contains(text(), '{time_period}')]",
+                        )
+                        await page.wait_for_load_state("networkidle")
+
+                    heatmap = await page.wait_for_selector("div.echarts-for-react")
+                    box = await heatmap.bounding_box()
+
+                    png_data = await page.screenshot(clip=box, type="png")
+
+                    return png_data
 
         except Exception as e:
             logger.error(f"Error capturing heatmap: {e}")
