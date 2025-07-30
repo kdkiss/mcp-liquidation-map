@@ -4,9 +4,9 @@ Smithery-compatible MCP Server for Liquidation Maps
 Allows users to request liquidation maps (24-hour or 12-hour) and retrieve corresponding images.
 """
 
-import os
 import logging
 import requests
+
 import time
 import json
 import base64
@@ -15,14 +15,6 @@ from typing import Any, Dict, List, Optional, Union
 from io import BytesIO
 from PIL import Image
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 
 # Configure logging
 logging.basicConfig(
@@ -156,6 +148,7 @@ class LiquidationMapMCPServer:
         """
         driver = None
         try:
+            from playwright.async_api import async_playwright
             logger.info(
                 f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
             )

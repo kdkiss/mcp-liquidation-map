@@ -7,14 +7,10 @@ Uses the FastMCP library for simplified MCP server creation.
 import asyncio
 import base64
 import logging
-import os
-import time
 from typing import Optional
 
 import requests
 from fastmcp import FastMCP
-from PIL import Image
-from playwright.async_api import async_playwright
 
 # Configure logging
 logging.basicConfig(
@@ -68,6 +64,7 @@ def get_crypto_price(symbol: str) -> Optional[str]:
 async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 hour") -> bytes:
     """Capture the Coinglass liquidation heatmap using Playwright."""
     try:
+        from playwright.async_api import async_playwright
         logger.info(
             f"Starting capture of Coinglass {symbol} heatmap with {time_period} timeframe"
         )
