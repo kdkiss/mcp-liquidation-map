@@ -29,7 +29,11 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
 2. Visit [Smithery.ai](https://smithery.ai)
 3. Click "Deploy" and connect your GitHub repository
 4. Smithery will automatically build and deploy your MCP server
-5. Use the provided URL to connect to your server from any MCP-compatible client
+5. The deployment sets the `CHROMEDRIVER_PATH` environment variable to
+   `/usr/local/bin/chromedriver` so ChromeDriver works out of the box. If you
+   use a custom path or your environment is offline, update `smithery.yaml`
+   accordingly and ensure ChromeDriver is pre-installed at that location.
+6. Use the provided URL to connect to your server from any MCP-compatible client
 
 ### Option 2: Local Development
 
@@ -67,10 +71,14 @@ sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
 sudo chmod +x /usr/local/bin/chromedriver
 ```
 
-4. Set environment variables:
+4. Set environment variables (optional):
 ```bash
 export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ```
+If `CHROMEDRIVER_PATH` is not set or the path does not exist, Selenium will
+attempt to download a compatible ChromeDriver using Selenium Manager.
+In offline environments, this download will fail, so you must pre-install
+ChromeDriver and set `CHROMEDRIVER_PATH` accordingly.
 
 5. Run the server:
 ```bash
@@ -135,8 +143,8 @@ The server supports all major cryptocurrencies available on Coinglass, including
 
 ### Environment Variables
 
-- `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`)
-- `PYTHONUNBUFFERED`: Set to `1` for real-time logging
+ - `CHROMEDRIVER_PATH`: Path to ChromeDriver executable (default: `/usr/local/bin/chromedriver`). If the path doesn't exist, Selenium Manager will try to download a compatible driver. For offline setups, install ChromeDriver manually and set this path.
+ - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
 
 ### Docker Configuration
 
@@ -173,7 +181,11 @@ The test suite includes:
 
 2. Push to GitHub and deploy via Smithery dashboard
 
-3. Smithery will provide a public URL for your MCP server
+3. Smithery automatically sets `CHROMEDRIVER_PATH` to
+   `/usr/local/bin/chromedriver`. Adjust the path in `smithery.yaml` if your
+   deployment uses a different location.
+
+4. Smithery will provide a public URL for your MCP server
 
 ### Manual Docker Deployment
 

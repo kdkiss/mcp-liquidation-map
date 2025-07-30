@@ -85,13 +85,23 @@ class LiquidationMapMCPServer:
         
         for attempt in range(max_retries):
             try:
-                logger.info(f"Creating local ChromeDriver instance (attempt {attempt+1}/{max_retries})")
-                
-                # Use ChromeDriver from environment or default path
-                chromedriver_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-                service = Service(chromedriver_path)
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                
+                logger.info(
+                    f"Creating local ChromeDriver instance (attempt {attempt + 1}/{max_retries})"
+                )
+
+                # Use ChromeDriver from environment if provided
+                chromedriver_path = os.environ.get(
+                    "CHROMEDRIVER_PATH", "/usr/local/bin/chromedriver"
+                )
+
+                if chromedriver_path and os.path.exists(chromedriver_path):
+                    logger.info(f"Using ChromeDriver at {chromedriver_path}")
+                    service = Service(chromedriver_path)
+                    driver = webdriver.Chrome(service=service, options=chrome_options)
+                else:
+                    logger.info("No ChromeDriver found, falling back to Selenium Manager")
+                    driver = webdriver.Chrome(options=chrome_options)
+
                 logger.info("Successfully created ChromeDriver instance")
                 return driver
                 
@@ -102,7 +112,12 @@ class LiquidationMapMCPServer:
                     time.sleep(retry_delay)
                 else:
                     logger.error("Max retries exceeded. Could not create ChromeDriver.")
-                    raise
+                    raise RuntimeError(
+                        "ChromeDriver could not be started. "
+                        "Ensure ChromeDriver is installed and the CHROMEDRIVER_PATH "
+                        "environment variable points to it. If running offline, pre-install "
+                        "ChromeDriver instead of relying on Selenium Manager."
+                    )
 
     def get_crypto_price(self, symbol: str) -> Optional[str]:
         """Fetch the current crypto price from CoinGecko API"""
