@@ -103,6 +103,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                     except Exception:
                         await page.keyboard.press("Enter")
                     await page.wait_for_load_state("networkidle")
+
                 except Exception as symbol_e:
                     logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
     
@@ -114,6 +115,7 @@ async def capture_coinglass_heatmap(symbol: str = "BTC", time_period: str = "24 
                     f"//li[@role='option' and contains(text(), '{time_period}')]"
                 )
                 await page.wait_for_load_state("networkidle")
+
     
             heatmap = await page.wait_for_selector("div.echarts-for-react")
             box = await heatmap.bounding_box()
