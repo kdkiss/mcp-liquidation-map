@@ -29,7 +29,10 @@ npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
 2. Visit [Smithery.ai](https://smithery.ai)
 3. Click "Deploy" and connect your GitHub repository
 4. Smithery will automatically build and deploy your MCP server
-5. Use the provided URL to connect to your server from any MCP-compatible client
+5. The deployment sets the `CHROMEDRIVER_PATH` environment variable to
+   `/usr/local/bin/chromedriver` so ChromeDriver works out of the box. If you
+   use a custom path, update `smithery.yaml` accordingly.
+6. Use the provided URL to connect to your server from any MCP-compatible client
 
 ### Option 2: Local Development
 
@@ -173,7 +176,11 @@ The test suite includes:
 
 2. Push to GitHub and deploy via Smithery dashboard
 
-3. Smithery will provide a public URL for your MCP server
+3. Smithery automatically sets `CHROMEDRIVER_PATH` to
+   `/usr/local/bin/chromedriver`. Adjust the path in `smithery.yaml` if your
+   deployment uses a different location.
+
+4. Smithery will provide a public URL for your MCP server
 
 ### Manual Docker Deployment
 
