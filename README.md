@@ -1,245 +1,238 @@
-# Liquidation Map MCP Server
+# Crypto Heatmap MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@kdkiss/mcp-liquidation-map)](https://smithery.ai/server/@kdkiss/mcp-liquidation-map)
-
-A Smithery-compatible Model Context Protocol (MCP) server that provides cryptocurrency liquidation heatmaps. Users can request liquidation maps for different cryptocurrencies with 12-hour or 24-hour timeframes, and the server returns high-quality images of the liquidation data.
+A Smithery-compatible Model Context Protocol (MCP) server that provides cryptocurrency price fetching and Coinglass liquidation heatmap capture functionality. This server replicates the core functionality of the original Python script without Telegram notifications.
 
 ## Features
 
-- **Cryptocurrency Support**: Works with major cryptocurrencies (BTC, ETH, BNB, ADA, SOL, XRP, DOT, DOGE, AVAX, MATIC, and more)
-- **Multiple Timeframes**: Supports both 12-hour and 24-hour liquidation maps
-- **High-Quality Images**: Returns PNG images with optimized resolution and clarity
-- **Real-time Price Data**: Includes current cryptocurrency prices from CoinGecko API
-- **Smithery Compatible**: Fully compatible with Smithery's MCP server registry and deployment platform
-- **FastMCP Integration**: Built using the FastMCP library for simplified development
+- **Cryptocurrency Price Fetching**: Get real-time cryptocurrency prices using CoinGecko API
+- **Liquidation Heatmap Capture**: Capture Coinglass liquidation heatmaps using BrowserCat MCP integration
+- **RESTful API**: Clean HTTP endpoints for easy integration
+- **Error Handling**: Graceful fallback responses when external services are unavailable
+- **Health Monitoring**: Built-in health check endpoint
 
-## Quick Start
+## API Endpoints
 
-### Installing via Smithery
+### 1. Get Cryptocurrency Price
 
-To install Liquidation Map for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kdkiss/mcp-liquidation-map):
+**Endpoint**: `/api/get_crypto_price`  
+**Methods**: GET, POST  
+**Parameters**:
+- `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH")
 
+**Example Request**:
 ```bash
-npx -y @smithery/cli install @kdkiss/mcp-liquidation-map --client claude
+curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 ```
 
-### Option 1: Deploy on Smithery (Recommended)
+**Example Response**:
+```json
+{
+  "price": "$113,975.00",
+  "symbol": "BTC"
+}
+```
 
-1. Fork this repository to your GitHub account
-2. Visit [Smithery.ai](https://smithery.ai)
-3. Click "Deploy" and connect your GitHub repository
-4. Smithery will automatically build and deploy your MCP server
-5. Smithery automatically installs Playwright and the required browsers.
-   If you need custom Playwright settings, update `smithery.yaml` accordingly.
+### 2. Capture Liquidation Heatmap
 
-6. Use the provided URL to connect to your server from any MCP-compatible client
+**Endpoint**: `/api/capture_heatmap`  
+**Methods**: GET, POST  
+**Parameters**:
+- `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH")
+- `time_period` (string, optional, default: "24 hour"): Time period ("12 hour", "24 hour", "1 month", "3 month")
 
-### Option 2: Local Development
+**Example Request**:
+```bash
+curl "http://localhost:5001/api/capture_heatmap?symbol=BTC&time_period=24%20hour"
+```
 
-#### Prerequisites
+**Example Response**:
+```json
+{
+  "image_path": "/tmp/btc_liquidation_heatmap_20250802_013339_24_hour.png",
+  "symbol": "BTC",
+  "time_period": "24 hour",
+  "note": "BrowserCat capture failed: Request failed with status 401. Returning simulated response.",
+  "browsercat_error": "Request failed with status 401"
+}
+```
+
+### 3. Health Check
+
+**Endpoint**: `/api/health`  
+**Method**: GET
+
+**Example Response**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-02T01:34:50.359764"
+}
+```
+
+## Installation and Setup
+
+### Prerequisites
 
 - Python 3.11+
-- Git
-- [Playwright](https://playwright.dev/python/) with Chromium browser
+- Virtual environment support
 
-#### Installation
+### Installation Steps
 
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd liquidation-map-mcp-server
-```
+1. **Clone or extract the project**:
+   ```bash
+   cd crypto_heatmap_mcp
+   ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+2. **Activate the virtual environment**:
+   ```bash
+   source venv/bin/activate
+   ```
 
-3. Install Playwright browsers:
-```bash
-playwright install
-```
+3. **Install dependencies** (already included):
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4. Run the server:
+4. **Set up BrowserCat API Key** (optional, for real heatmap capture):
+   ```bash
+   export BROWSERCAT_API_KEY="your-api-key-here"
+   ```
+   Get a free API key at: https://browsercat.xyz/mcp
 
-```bash
-python fastmcp_server.py
-```
-If `CHROMEDRIVER_PATH` is not set or the path does not exist, Selenium will
-attempt to download a compatible ChromeDriver using Selenium Manager.
-In offline environments, this download will fail, so you must pre-install
-ChromeDriver and set `CHROMEDRIVER_PATH` accordingly.
+5. **Run the server**:
+   ```bash
+   python src/main.py
+   ```
 
-5. Run the server:
-```bash
-python fastmcp_server.py
-```
-
-## Usage
-
-### Tool: get_liquidation_map
-
-Retrieves a liquidation heatmap for a specified cryptocurrency and timeframe.
-
-**Parameters:**
-- `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH", "SOL")
-- `timeframe` (string, required): Time period for the heatmap ("12 hour" or "24 hour")
-
-**Returns:**
-- Base64-encoded PNG image of the liquidation heatmap
-- Text description with symbol, timeframe, and current price
-
-**Example Usage:**
-
-```python
-# Using the MCP client
-result = await client.call_tool("get_liquidation_map", {
-    "symbol": "BTC",
-    "timeframe": "24 hour"
-})
-```
-
-### Supported Cryptocurrencies
-
-The server supports all major cryptocurrencies available on Coinglass, including:
-- Bitcoin (BTC)
-- Ethereum (ETH)
-- Binance Coin (BNB)
-- Cardano (ADA)
-- Solana (SOL)
-- Ripple (XRP)
-- Polkadot (DOT)
-- Dogecoin (DOGE)
-- Avalanche (AVAX)
-- Polygon (MATIC)
-- And many more...
+The server will start on `http://localhost:5001`
 
 ## Architecture
 
 ### Core Components
 
-1. **LiquidationMapMCPServer**: Main server class implementing MCP protocol
-2. **FastMCP Integration**: Simplified server setup using FastMCP library
-3. **Web Scraping Engine**: Playwright automation for capturing Coinglass heatmaps
-4. **Price API Integration**: CoinGecko API for real-time cryptocurrency prices
-5. **Image Processing**: High-quality PNG generation with optimized compression
+- **Flask Application**: Main web server framework
+- **Crypto Routes**: API endpoints for cryptocurrency operations
+- **BrowserCat Client**: Integration with Smithery's BrowserCat MCP for browser automation
+- **Error Handling**: Graceful fallbacks when external services are unavailable
 
-### Data Sources
+### File Structure
 
-- **Liquidation Data**: [Coinglass](https://www.coinglass.com/pro/futures/LiquidationHeatMap)
-- **Price Data**: [CoinGecko API](https://api.coingecko.com/api/v3/)
-
-## Configuration
-
-### Environment Variables
-
- - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
-
- - `PYTHONUNBUFFERED`: Set to `1` for real-time logging
-
-### Docker Configuration
-
-The included Dockerfile provides a complete containerized environment. It
-automatically installs Playwright and the Chromium browser:
-
-
-```dockerfile
-# Use Python 3.11 slim image and install Playwright browsers
-# Exposes port 8000 for the MCP server
+```
+crypto_heatmap_mcp/
+├── src/
+│   ├── main.py                     # Main Flask application
+│   ├── routes/
+│   │   ├── crypto.py              # Cryptocurrency API endpoints
+│   │   └── user.py                # Template user routes (unused)
+│   ├── services/
+│   │   └── browsercat_client.py   # BrowserCat MCP integration
+│   ├── models/                    # Database models (unused)
+│   └── static/                    # Static files
+├── venv/                          # Virtual environment
+├── requirements.txt               # Python dependencies
+└── README.md                      # This file
 ```
 
-## Testing
+## Smithery MCP Integration
 
-Run the test suite to verify functionality:
+This server integrates with Smithery's Model Context Protocol ecosystem:
+
+### BrowserCat MCP Server
+- **URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`
+- **Purpose**: Browser automation for capturing Coinglass heatmaps
+- **Tools Used**:
+  - `browsercat_navigate`: Navigate to web pages
+  - `browsercat_screenshot`: Capture screenshots
+  - `browsercat_click`: Click page elements
+  - `browsercat_evaluate`: Execute JavaScript
+
+### Fallback Behavior
+
+When BrowserCat MCP is unavailable (e.g., missing API key or service errors), the server provides simulated responses to ensure functionality continues. This makes the server robust and suitable for development/testing environments.
+
+## Supported Cryptocurrencies
+
+The server supports all major cryptocurrencies available on CoinGecko, including:
+- BTC (Bitcoin)
+- ETH (Ethereum)
+- BNB (Binance Coin)
+- ADA (Cardano)
+- SOL (Solana)
+- XRP (Ripple)
+- DOT (Polkadot)
+- DOGE (Dogecoin)
+- AVAX (Avalanche)
+- MATIC (Polygon)
+
+## Error Handling
+
+The server implements comprehensive error handling:
+
+1. **Invalid Parameters**: Returns 400 Bad Request with descriptive error messages
+2. **External Service Failures**: Graceful fallbacks with simulated responses
+3. **Network Issues**: Timeout handling and retry logic
+4. **API Rate Limits**: Proper HTTP status codes and error messages
+
+## Development and Testing
+
+### Running Tests
+
+Test the endpoints using curl:
 
 ```bash
-python test_mcp_server.py
+# Test health endpoint
+curl "http://localhost:5001/api/health"
+
+# Test crypto price
+curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
+
+# Test heatmap capture
+curl "http://localhost:5001/api/capture_heatmap?symbol=ETH&time_period=24%20hour"
 ```
 
-The tests that capture screenshots require Playwright with Chromium installed.
-If the browser binaries are missing, the tool tests will be skipped.
+### Development Mode
 
-
-The test suite includes:
-- Basic server functionality tests
-- Tool execution tests for both 12-hour and 24-hour timeframes
-- Input validation tests
-- Image generation verification
+The server runs in debug mode by default, providing:
+- Automatic reloading on code changes
+- Detailed error messages
+- Debug console access
 
 ## Deployment
 
-### Smithery Deployment
+For production deployment, consider:
 
-1. Ensure your repository includes:
-   - `fastmcp_server.py` (main server file)
-   - `requirements.txt` (dependencies)
-   - `Dockerfile` (container configuration)
+1. **Use a production WSGI server** (e.g., Gunicorn, uWSGI)
+2. **Set up environment variables** for API keys
+3. **Configure reverse proxy** (e.g., Nginx)
+4. **Enable HTTPS** for secure communication
+5. **Set up monitoring** and logging
 
-2. Push to GitHub and deploy via Smithery dashboard
+## License
 
-3. Smithery installs Playwright for you automatically.
-
-
-4. Smithery will provide a public URL for your MCP server
-
-### Manual Docker Deployment
-
-```bash
-# Build the Docker image
-docker build -t liquidation-map-mcp .
-
-# Run the container
-docker run -p 8000:8000 liquidation-map-mcp
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Playwright Browser Issues**
-   - Run `playwright install` to ensure the Chromium browser is available
-   - Verify the browser binaries are present in the deployment image
-
-2. **Timeout Errors**
-   - Check internet connectivity
-   - Verify Coinglass website accessibility
-   - Increase timeout values if needed
-
-3. **Image Generation Failures**
-   - Ensure sufficient memory for the browser
-   - Check that the heatmap container element is found on the page
-
-### Debug Mode
-
-Enable debug logging by setting the log level:
-
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new functionality
+4. Add tests if applicable
 5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Support
 
 For issues and questions:
-- Create an issue on GitHub
-- Check the [Smithery Documentation](https://smithery.ai/docs)
-- Review the [FastMCP Documentation](https://gofastmcp.com)
+1. Check the error logs in the console
+2. Verify API keys are correctly set
+3. Ensure all dependencies are installed
+4. Check network connectivity to external services
 
-## Acknowledgments
+## Changelog
 
-- [Smithery.ai](https://smithery.ai) for MCP server hosting and registry
-- [FastMCP](https://gofastmcp.com) for the Python MCP framework
-- [Coinglass](https://www.coinglass.com) for liquidation data
-- [CoinGecko](https://www.coingecko.com) for cryptocurrency price data
+### v1.0.0
+- Initial release
+- Cryptocurrency price fetching via CoinGecko API
+- BrowserCat MCP integration for heatmap capture
+- RESTful API endpoints
+- Comprehensive error handling and fallbacks
+

@@ -1,9 +1,0 @@
-name: mcp-liquidation-map
-type: server
-entry: fastmcp_server.py
-server:
-  mcpVersion: 2
-  timeout: 120
-  requestTimeout: 120
-  port: 8000
-  usePlaywright: true
