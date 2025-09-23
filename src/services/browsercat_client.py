@@ -167,16 +167,55 @@ class BrowserCatMCPClient:
             
             # Select symbol if not BTC
             if symbol != "BTC":
-                # Click Symbol tab
-                symbol_tab_result = self.click("button[role='tab']:contains('Symbol')")
-                if "error" in symbol_tab_result:
+                # Click Symbol tab using text matching since :contains is not supported
+                symbol_tab_script = """
+                (() => {
+                    const buttons = Array.from(document.querySelectorAll('button[role="tab"]'));
+                    const target = buttons.find(btn => (btn.textContent || '').trim().toLowerCase() === 'symbol');
+                    if (target) {
+                        target.click();
+                        return true;
+                    }
+                    return false;
+                })();
+                """
+                symbol_tab_result = self.evaluate(symbol_tab_script)
+                if isinstance(symbol_tab_result, dict) and symbol_tab_result.get("error"):
                     logger.warning(f"Could not click symbol tab: {symbol_tab_result}")
-                
-                # Fill symbol input
-                symbol_input_result = self.fill("input.MuiAutocomplete-input", symbol)
-                if "error" in symbol_input_result:
-                    logger.warning(f"Could not fill symbol input: {symbol_input_result}")
-                
+                elif not (isinstance(symbol_tab_result, dict) and symbol_tab_result.get("result")):
+                    logger.warning("Symbol tab not found via text search.")
+
+                # Wait for symbol autocomplete input to be present before interacting
+                wait_for_symbol_input_script = """
+                new Promise((resolve) => {
+                    const timeoutMs = 10000;
+                    const intervalMs = 250;
+                    const start = Date.now();
+
+                    const poll = () => {
+                        if (document.querySelector('input.MuiAutocomplete-input')) {
+                            resolve(true);
+                        } else if (Date.now() - start >= timeoutMs) {
+                            resolve(false);
+                        } else {
+                            setTimeout(poll, intervalMs);
+                        }
+                    };
+
+                    poll();
+                });
+                """
+                wait_for_input = self.evaluate(wait_for_symbol_input_script)
+                input_ready = isinstance(wait_for_input, dict) and not wait_for_input.get("error") and bool(wait_for_input.get("result"))
+
+                if input_ready:
+                    # Fill symbol input
+                    symbol_input_result = self.fill("input.MuiAutocomplete-input", symbol)
+                    if "error" in symbol_input_result:
+                        logger.warning(f"Could not fill symbol input: {symbol_input_result}")
+                else:
+                    logger.warning("Symbol autocomplete input did not appear before timeout.")
+
                 # Press Enter to select
                 enter_script = """
                 const input = document.querySelector('input.MuiAutocomplete-input');
