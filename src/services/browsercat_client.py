@@ -24,7 +24,10 @@ class BrowserCatMCPClient:
             api_key: BrowserCat API key (can also be set via BROWSERCAT_API_KEY env var)
         """
         self.api_key = api_key or os.getenv('BROWSERCAT_API_KEY')
-        self.base_url = "https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+        self.base_url = os.getenv(
+            'BROWSERCAT_BASE_URL',
+            "https://server.smithery.ai/@dmaznest/browsercat-mcp-server",
+        )
         
         if not self.api_key:
             logger.warning("No BrowserCat API key provided. Some functionality may be limited.")
