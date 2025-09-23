@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -11,10 +12,36 @@ from src.models.user import db
 from src.routes.crypto import crypto_bp
 from src.routes.user import user_bp
 
-app = Flask(
-    __name__, static_folder=os.path.join(os.path.dirname(__file__), "static")
-)
-app.config.from_object(Config)
+
+_LOG_LEVELS = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
+    'NOTSET': logging.NOTSET,
+}
+
+
+def configure_logging():
+    """Configure application logging once, respecting existing handlers."""
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        return
+
+    level_name = os.getenv('APP_LOG_LEVEL', 'INFO').upper()
+    level = _LOG_LEVELS.get(level_name, logging.INFO)
+
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+    )
+
+configure_logging()
+
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+
 
 app.register_blueprint(user_bp, url_prefix="/api")
 app.register_blueprint(crypto_bp, url_prefix="/api")

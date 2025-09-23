@@ -137,6 +137,21 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 The server will start on `http://localhost:5001`
 
+## Logging
+
+The application configures Python's logging module during startup. By default it emits informational messages with timestamps
+and logger names. Hosting platforms that already configure logging will retain their handlers because the application only
+initializes logging when no handlers are present.
+
+You can customize the log level by setting the `APP_LOG_LEVEL` environment variable before starting the server:
+
+```bash
+export APP_LOG_LEVEL=DEBUG
+python src/main.py
+```
+
+Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
+
 ## Architecture
 
 ### Core Components
