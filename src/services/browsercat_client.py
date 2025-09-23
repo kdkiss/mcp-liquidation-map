@@ -5,11 +5,11 @@ This module provides a client interface to interact with the BrowserCat MCP serv
 for browser automation tasks like navigation, screenshot capture, and JavaScript execution.
 """
 
-import requests
-import json
-import os
 import logging
-from typing import Optional, Dict, Any
+import os
+from typing import Any, Dict, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 

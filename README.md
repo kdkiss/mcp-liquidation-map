@@ -213,6 +213,17 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 curl "http://localhost:5001/api/capture_heatmap?symbol=ETH&time_period=24%20hour"
 ```
 
+### Linting
+
+We use [Ruff](https://docs.astral.sh/ruff/) to enforce import cleanliness and other Python style rules. Run the linter before
+opening a pull request:
+
+```bash
+ruff check .
+```
+
+Use `ruff check --fix .` to automatically resolve simple issues such as unused imports.
+
 ### Development Mode
 
 The server runs in debug mode by default, providing:
