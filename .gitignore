@@ -5,3 +5,4 @@ package-lock.json
 .env
 /venv
 .git
+src/database/app.db
