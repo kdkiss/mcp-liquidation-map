@@ -39,6 +39,7 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 **Parameters**:
 - `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH")
 - `time_period` (string, optional, default: "24 hour"): Time period ("12 hour", "24 hour", "1 month", "3 month")
+- `allow_simulated` (boolean, optional): When `true`, include a simulated payload if BrowserCat is unavailable.
 
 **Example Request**:
 ```bash
@@ -48,13 +49,35 @@ curl "http://localhost:5001/api/capture_heatmap?symbol=BTC&time_period=24%20hour
 **Example Response**:
 ```json
 {
-  "image_path": "/tmp/btc_liquidation_heatmap_20250802_013339_24_hour.png",
+  "image_path": "/tmp/heatmap.png",
   "symbol": "BTC",
   "time_period": "24 hour",
-  "note": "BrowserCat capture failed: Request failed with status 401. Returning simulated response.",
-  "browsercat_error": "Request failed with status 401"
+  "browsercat_result": {
+    "screenshot_path": "/tmp/heatmap.png"
+  }
 }
 ```
+
+**Example BrowserCat Failure (HTTP 502)**:
+
+```json
+{
+  "error": "Failed to capture heatmap via BrowserCat.",
+  "browsercat_error": "Request failed with status 401",
+  "symbol": "BTC",
+  "time_period": "24 hour",
+  "fallback_provided": true,
+  "fallback": {
+    "image_path": "/tmp/btc_liquidation_heatmap_20250802_013339_24_hour.png",
+    "symbol": "BTC",
+    "time_period": "24 hour",
+    "note": "Simulated heatmap placeholder generated without BrowserCat.",
+    "simulated": true
+  }
+}
+```
+
+Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEATMAP=true` environment variable) to include the fallback payload for local development. Production environments should rely on the HTTP 502/503 status codes without the simulated payload.
 
 ### 3. Health Check
 
