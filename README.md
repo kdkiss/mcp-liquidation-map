@@ -99,7 +99,12 @@ curl "http://localhost:5001/api/capture_heatmap?symbol=BTC&time_period=24%20hour
    ```
    Get a free API key at: https://browsercat.xyz/mcp
 
-5. **Run the server**:
+5. **Apply database migrations** (run this before starting the server to create/update the schema):
+   ```bash
+   flask --app src.main db upgrade
+   ```
+
+6. **Run the server**:
    ```bash
    python src/main.py
    ```
@@ -120,6 +125,7 @@ The server will start on `http://localhost:5001`
 ```
 crypto_heatmap_mcp/
 ├── src/
+│   ├── config.py                   # Environment-driven configuration
 │   ├── main.py                     # Main Flask application
 │   ├── routes/
 │   │   ├── crypto.py              # Cryptocurrency API endpoints
@@ -127,6 +133,8 @@ crypto_heatmap_mcp/
 │   ├── services/
 │   │   └── browsercat_client.py   # BrowserCat MCP integration
 │   ├── models/                    # Database models (unused)
+│   ├── database/
+│   │   └── migrations/            # Alembic migration environment
 │   └── static/                    # Static files
 ├── venv/                          # Virtual environment
 ├── requirements.txt               # Python dependencies
@@ -192,10 +200,15 @@ curl "http://localhost:5001/api/capture_heatmap?symbol=ETH&time_period=24%20hour
 
 ### Development Mode
 
-The server runs in debug mode by default, providing:
-- Automatic reloading on code changes
-- Detailed error messages
-- Debug console access
+Debug mode is disabled by default for safety. Enable it during development by setting
+the `DEBUG` environment variable before starting the server:
+
+```bash
+export DEBUG=1
+python src/main.py
+```
+
+This enables automatic reloading on code changes and detailed error messages.
 
 ## Deployment
 
