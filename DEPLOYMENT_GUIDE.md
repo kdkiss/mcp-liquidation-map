@@ -88,6 +88,8 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 ### Optional Environment Variables
 
+- `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP endpoint (defaults to Smithery hosted server)
+- `BROWSERCAT_TIMEOUT`: Customize the request timeout in seconds (defaults to 30)
 - `FLASK_ENV`: Set to `production` for production deployment
 - `SECRET_KEY`: Flask secret key (change from default for production)
 
@@ -96,18 +98,27 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 **Linux/macOS**:
 ```bash
 export BROWSERCAT_API_KEY="your-api-key-here"
+export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+export BROWSERCAT_TIMEOUT="45"
 export FLASK_ENV="production"
 ```
 
 **Windows**:
 ```cmd
 set BROWSERCAT_API_KEY=your-api-key-here
+set BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
+set BROWSERCAT_TIMEOUT=45
 set FLASK_ENV=production
 ```
 
 **Docker**:
 ```bash
-docker run -e BROWSERCAT_API_KEY=your-key -e FLASK_ENV=production crypto-heatmap-mcp
+docker run \
+  -e BROWSERCAT_API_KEY=your-key \
+  -e BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server \
+  -e BROWSERCAT_TIMEOUT=45 \
+  -e FLASK_ENV=production \
+  crypto-heatmap-mcp
 ```
 
 ## Reverse Proxy Setup (Nginx)
