@@ -1,9 +1,12 @@
 from flask import Blueprint, jsonify, request, current_app
 import requests
-import os
-import time
-from datetime import datetime
+
 import logging
+import os
+from datetime import datetime
+
+import requests
+from flask import Blueprint, jsonify, request
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
@@ -153,14 +156,27 @@ def capture_heatmap():
             if "error" in heatmap_result:
                 _get_logger().error(
                     f"BrowserCat heatmap capture failed: {heatmap_result['error']}"
+
+                status_code = heatmap_result.get('status_code')
+                logger.error(
+                    "BrowserCat heatmap capture failed (status=%s): %s",
+                    status_code,
+                    heatmap_result['error'],
                 )
                 response_payload = {
                     'error': 'Failed to capture heatmap via BrowserCat.',
                     'browsercat_error': heatmap_result['error'],
+                    'browsercat_status_code': status_code,
                     'symbol': symbol,
                     'time_period': time_period,
                     'fallback_provided': False
                 }
+
+                if 'response' in heatmap_result:
+                    response_payload['browsercat_response'] = heatmap_result['response']
+
+                if 'response_text' in heatmap_result:
+                    response_payload['browsercat_response_text'] = heatmap_result['response_text']
 
                 if allow_simulated:
                     response_payload['fallback'] = _build_simulated_payload(symbol, time_period)
@@ -181,6 +197,7 @@ def capture_heatmap():
             response_payload = {
                 'error': 'BrowserCat client error while capturing heatmap.',
                 'browsercat_error': str(browsercat_error),
+                'browsercat_status_code': getattr(browsercat_error, 'status_code', None),
                 'symbol': symbol,
                 'time_period': time_period,
                 'fallback_provided': False

@@ -116,13 +116,21 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    pip install -r requirements.txt
    ```
 
-4. **Set up BrowserCat API Key** (optional, for real heatmap capture):
+4. **Configure BrowserCat access** (optional, for real heatmap capture):
    ```bash
    export BROWSERCAT_API_KEY="your-api-key-here"
+   # Optional overrides if you self-host BrowserCat or need a longer timeout
+   export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+   export BROWSERCAT_TIMEOUT="45"  # seconds
    ```
    Get a free API key at: https://browsercat.xyz/mcp
 
-5. **Run the server**:
+5. **Apply database migrations** (run this before starting the server to create/update the schema):
+   ```bash
+   flask --app src.main db upgrade
+   ```
+
+6. **Run the server**:
    ```bash
    python src/main.py
    ```
@@ -158,6 +166,7 @@ Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
 ```
 crypto_heatmap_mcp/
 ├── src/
+│   ├── config.py                   # Environment-driven configuration
 │   ├── main.py                     # Main Flask application
 │   ├── routes/
 │   │   ├── crypto.py              # Cryptocurrency API endpoints
@@ -165,6 +174,8 @@ crypto_heatmap_mcp/
 │   ├── services/
 │   │   └── browsercat_client.py   # BrowserCat MCP integration
 │   ├── models/                    # Database models (unused)
+│   ├── database/
+│   │   └── migrations/            # Alembic migration environment
 │   └── static/                    # Static files
 ├── venv/                          # Virtual environment
 ├── requirements.txt               # Python dependencies
@@ -176,8 +187,9 @@ crypto_heatmap_mcp/
 This server integrates with Smithery's Model Context Protocol ecosystem:
 
 ### BrowserCat MCP Server
-- **URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`
+- **Default URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server` (override with `BROWSERCAT_BASE_URL` if needed)
 - **Purpose**: Browser automation for capturing Coinglass heatmaps
+- **Timeout**: Requests default to 30 seconds and can be adjusted via `BROWSERCAT_TIMEOUT`
 - **Tools Used**:
   - `browsercat_navigate`: Navigate to web pages
   - `browsercat_screenshot`: Capture screenshots
@@ -228,12 +240,28 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 curl "http://localhost:5001/api/capture_heatmap?symbol=ETH&time_period=24%20hour"
 ```
 
+### Linting
+
+We use [Ruff](https://docs.astral.sh/ruff/) to enforce import cleanliness and other Python style rules. Run the linter before
+opening a pull request:
+
+```bash
+ruff check .
+```
+
+Use `ruff check --fix .` to automatically resolve simple issues such as unused imports.
+
 ### Development Mode
 
-The server runs in debug mode by default, providing:
-- Automatic reloading on code changes
-- Detailed error messages
-- Debug console access
+Debug mode is disabled by default for safety. Enable it during development by setting
+the `DEBUG` environment variable before starting the server:
+
+```bash
+export DEBUG=1
+python src/main.py
+```
+
+This enables automatic reloading on code changes and detailed error messages.
 
 ## Deployment
 
