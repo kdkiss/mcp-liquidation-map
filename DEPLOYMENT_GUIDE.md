@@ -96,14 +96,15 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 - `FLASK_ENV`: Set to `production` for production deployment.
 - `SECRET_KEY`: Flask secret key. Defaults to `dev-secret-key`; set to a unique value in production.
 
+
 ### Setting Environment Variables
 
 **Linux/macOS**:
 ```bash
-export BROWSERCAT_API_KEY="your-api-key-here"
 export SECRET_KEY="change-me"
 export DATABASE_URI="postgresql+psycopg://user:pass@host:5432/dbname"
 export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+
 export FLASK_ENV="production"
 ```
 
@@ -113,6 +114,7 @@ set BROWSERCAT_API_KEY=your-api-key-here
 set SECRET_KEY=change-me
 set DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname
 set BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
+
 set FLASK_ENV=production
 ```
 
@@ -125,6 +127,7 @@ docker run \
   -e BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server \
   -e FLASK_ENV=production \
   mcp-liquidation-map
+
 ```
 
 ## Reverse Proxy Setup (Nginx)

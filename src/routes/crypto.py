@@ -1,9 +1,12 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 import requests
-import os
-import time
-from datetime import datetime
+
 import logging
+import os
+from datetime import datetime
+
+import requests
+from flask import Blueprint, jsonify, request
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
@@ -11,9 +14,15 @@ _FALSY_STRINGS = {'0', 'false', 'no', 'off'}
 
 crypto_bp = Blueprint('crypto', __name__)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _get_logger():
+    """Return the active application logger when available."""
+    try:
+        return current_app.logger
+    except RuntimeError:
+        return logger
 
 @crypto_bp.route('/get_crypto_price', methods=['GET', 'POST'])
 def get_crypto_price():
@@ -70,7 +79,7 @@ def get_crypto_price():
             return jsonify({'error': f'Failed to fetch price for {symbol}'}), 500
             
     except Exception as e:
-        logger.error(f"Error fetching {symbol} price: {e}")
+        _get_logger().error(f"Error fetching {symbol} price: {e}")
         return jsonify({'error': str(e)}), 500
 
 def _parse_bool(value):
@@ -145,14 +154,29 @@ def capture_heatmap():
             heatmap_result = browsercat_client.capture_coinglass_heatmap(symbol, time_period)
 
             if "error" in heatmap_result:
-                logger.error(f"BrowserCat heatmap capture failed: {heatmap_result['error']}")
+                _get_logger().error(
+                    f"BrowserCat heatmap capture failed: {heatmap_result['error']}"
+
+                status_code = heatmap_result.get('status_code')
+                logger.error(
+                    "BrowserCat heatmap capture failed (status=%s): %s",
+                    status_code,
+                    heatmap_result['error'],
+                )
                 response_payload = {
                     'error': 'Failed to capture heatmap via BrowserCat.',
                     'browsercat_error': heatmap_result['error'],
+                    'browsercat_status_code': status_code,
                     'symbol': symbol,
                     'time_period': time_period,
                     'fallback_provided': False
                 }
+
+                if 'response' in heatmap_result:
+                    response_payload['browsercat_response'] = heatmap_result['response']
+
+                if 'response_text' in heatmap_result:
+                    response_payload['browsercat_response_text'] = heatmap_result['response_text']
 
                 if allow_simulated:
                     response_payload['fallback'] = _build_simulated_payload(symbol, time_period)
@@ -169,10 +193,11 @@ def capture_heatmap():
                 })
                 
         except Exception as browsercat_error:
-            logger.error(f"BrowserCat client error: {browsercat_error}")
+            _get_logger().error(f"BrowserCat client error: {browsercat_error}")
             response_payload = {
                 'error': 'BrowserCat client error while capturing heatmap.',
                 'browsercat_error': str(browsercat_error),
+                'browsercat_status_code': getattr(browsercat_error, 'status_code', None),
                 'symbol': symbol,
                 'time_period': time_period,
                 'fallback_provided': False
@@ -185,7 +210,7 @@ def capture_heatmap():
             return jsonify(response_payload), 503
         
     except Exception as e:
-        logger.error(f"Error capturing heatmap: {e}")
+        _get_logger().error(f"Error capturing heatmap: {e}")
         return jsonify({'error': str(e)}), 500
 
 @crypto_bp.route('/health', methods=['GET'])

@@ -120,6 +120,8 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 4. **Configure environment variables** (see [Configuration](#configuration) for details).
 
+
+
 5. **Apply database migrations** (run this before starting the server to create/update the schema):
    ```bash
    flask --app src.main db upgrade
@@ -131,6 +133,21 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    ```
 
 The server will start on `http://localhost:5001`
+
+## Logging
+
+The application configures Python's logging module during startup. By default it emits informational messages with timestamps
+and logger names. Hosting platforms that already configure logging will retain their handlers because the application only
+initializes logging when no handlers are present.
+
+You can customize the log level by setting the `APP_LOG_LEVEL` environment variable before starting the server:
+
+```bash
+export APP_LOG_LEVEL=DEBUG
+python src/main.py
+```
+
+Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
 
 ## Architecture
 
@@ -177,8 +194,9 @@ is not defined.
 This server integrates with Smithery's Model Context Protocol ecosystem:
 
 ### BrowserCat MCP Server
-- **URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`
+- **Default URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server` (override with `BROWSERCAT_BASE_URL` if needed)
 - **Purpose**: Browser automation for capturing Coinglass heatmaps
+- **Timeout**: Requests default to 30 seconds and can be adjusted via `BROWSERCAT_TIMEOUT`
 - **Tools Used**:
   - `browsercat_navigate`: Navigate to web pages
   - `browsercat_screenshot`: Capture screenshots
@@ -228,6 +246,17 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 # Test heatmap capture
 curl "http://localhost:5001/api/capture_heatmap?symbol=ETH&time_period=24%20hour"
 ```
+
+### Linting
+
+We use [Ruff](https://docs.astral.sh/ruff/) to enforce import cleanliness and other Python style rules. Run the linter before
+opening a pull request:
+
+```bash
+ruff check .
+```
+
+Use `ruff check --fix .` to automatically resolve simple issues such as unused imports.
 
 ### Development Mode
 
