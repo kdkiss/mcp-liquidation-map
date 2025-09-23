@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request
 import requests
 import os
-import time
 from datetime import datetime
 import logging
 from src.services.browsercat_client import browsercat_client
