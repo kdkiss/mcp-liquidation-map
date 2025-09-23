@@ -8,13 +8,15 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 1. **Navigate to project directory**:
    ```bash
-   cd crypto_heatmap_mcp
+   cd mcp-liquidation-map
    ```
 
-2. **Activate virtual environment**:
+2. **Create (optional) virtual environment**:
    ```bash
-   source venv/bin/activate
+   python -m venv .venv
+   source .venv/bin/activate
    ```
+   Use whatever virtual environment tooling fits your workflow if you already have one configured.
 
 3. **Run the server**:
    ```bash
@@ -34,8 +36,9 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 1. **Install Gunicorn**:
    ```bash
    pip install gunicorn
-   pip freeze > requirements.txt
    ```
+   Add `gunicorn` to `requirements.txt` manually or use a dependency management tool such as `pip-tools` to regenerate locked
+   requirements in a controlled manner.
 
 2. **Create Gunicorn configuration** (`gunicorn.conf.py`):
    ```python
@@ -74,40 +77,44 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 2. **Build and run**:
    ```bash
-   docker build -t crypto-heatmap-mcp .
-   docker run -p 5001:5001 -e BROWSERCAT_API_KEY=your-key crypto-heatmap-mcp
+   docker build -t mcp-liquidation-map .
+   docker run -p 5001:5001 -e BROWSERCAT_API_KEY=your-key mcp-liquidation-map
    ```
 
 ## Environment Configuration
 
 ### Required Environment Variables
 
-- `BROWSERCAT_API_KEY`: Your BrowserCat API key (optional, for real heatmap capture)
-  - Get free key at: https://browsercat.xyz/mcp
-  - Without this key, the server will provide simulated responses
+- `BROWSERCAT_API_KEY`: BrowserCat API key for real heatmap capture. Get a free key at https://browsercat.xyz/mcp. Without this
+  key, the server returns simulated responses.
 
 ### Optional Environment Variables
 
-- `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP endpoint (defaults to Smithery hosted server)
-- `BROWSERCAT_TIMEOUT`: Customize the request timeout in seconds (defaults to 30)
-- `FLASK_ENV`: Set to `production` for production deployment
-- `SECRET_KEY`: Flask secret key (change from default for production)
+- `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP server URL. Default:
+  `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`.
+- `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/database/app.db`.
+- `FLASK_ENV`: Set to `production` for production deployment.
+- `SECRET_KEY`: Flask secret key. Defaults to `dev-secret-key`; set to a unique value in production.
+
 
 ### Setting Environment Variables
 
 **Linux/macOS**:
 ```bash
-export BROWSERCAT_API_KEY="your-api-key-here"
+export SECRET_KEY="change-me"
+export DATABASE_URI="postgresql+psycopg://user:pass@host:5432/dbname"
 export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
-export BROWSERCAT_TIMEOUT="45"
+
 export FLASK_ENV="production"
 ```
 
 **Windows**:
 ```cmd
 set BROWSERCAT_API_KEY=your-api-key-here
+set SECRET_KEY=change-me
+set DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname
 set BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
-set BROWSERCAT_TIMEOUT=45
+
 set FLASK_ENV=production
 ```
 
@@ -115,17 +122,19 @@ set FLASK_ENV=production
 ```bash
 docker run \
   -e BROWSERCAT_API_KEY=your-key \
+  -e SECRET_KEY=change-me \
+  -e DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname \
   -e BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server \
-  -e BROWSERCAT_TIMEOUT=45 \
   -e FLASK_ENV=production \
-  crypto-heatmap-mcp
+  mcp-liquidation-map
+
 ```
 
 ## Reverse Proxy Setup (Nginx)
 
 ### Nginx Configuration
 
-Create `/etc/nginx/sites-available/crypto-heatmap-mcp`:
+Create `/etc/nginx/sites-available/mcp-liquidation-map`:
 
 ```nginx
 server {
@@ -147,7 +156,7 @@ server {
 
 Enable the site:
 ```bash
-sudo ln -s /etc/nginx/sites-available/crypto-heatmap-mcp /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/mcp-liquidation-map /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -176,7 +185,7 @@ sudo systemctl reload nginx
 
 ### Create Service File
 
-Create `/etc/systemd/system/crypto-heatmap-mcp.service`:
+Create `/etc/systemd/system/mcp-liquidation-map.service`:
 
 ```ini
 [Unit]
@@ -186,10 +195,13 @@ After=network.target
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/ubuntu/crypto_heatmap_mcp
-Environment=PATH=/home/ubuntu/crypto_heatmap_mcp/venv/bin
+WorkingDirectory=/home/ubuntu/mcp-liquidation-map
+Environment="PATH=/home/ubuntu/mcp-liquidation-map/.venv/bin:/usr/bin"
 Environment=BROWSERCAT_API_KEY=your-api-key-here
-ExecStart=/home/ubuntu/crypto_heatmap_mcp/venv/bin/python src/main.py
+Environment=SECRET_KEY=change-me
+Environment=DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname
+Environment=BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
+ExecStart=/home/ubuntu/mcp-liquidation-map/.venv/bin/python src/main.py
 Restart=always
 RestartSec=10
 
@@ -201,9 +213,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable crypto-heatmap-mcp
-sudo systemctl start crypto-heatmap-mcp
-sudo systemctl status crypto-heatmap-mcp
+sudo systemctl enable mcp-liquidation-map
+sudo systemctl start mcp-liquidation-map
+sudo systemctl status mcp-liquidation-map
 ```
 
 ## Monitoring and Logging
@@ -214,10 +226,10 @@ The Flask application logs to stdout. To capture logs:
 
 ```bash
 # View real-time logs
-sudo journalctl -u crypto-heatmap-mcp -f
+sudo journalctl -u mcp-liquidation-map -f
 
 # View recent logs
-sudo journalctl -u crypto-heatmap-mcp -n 100
+sudo journalctl -u mcp-liquidation-map -n 100
 ```
 
 ### Health Monitoring
@@ -238,10 +250,10 @@ fi
 
 ### Log Rotation
 
-Configure log rotation in `/etc/logrotate.d/crypto-heatmap-mcp`:
+Configure log rotation in `/etc/logrotate.d/mcp-liquidation-map`:
 
 ```
-/var/log/crypto-heatmap-mcp/*.log {
+/var/log/mcp-liquidation-map/*.log {
     daily
     missingok
     rotate 52
@@ -250,7 +262,7 @@ Configure log rotation in `/etc/logrotate.d/crypto-heatmap-mcp`:
     notifempty
     create 644 ubuntu ubuntu
     postrotate
-        systemctl reload crypto-heatmap-mcp
+        systemctl reload mcp-liquidation-map
     endscript
 }
 ```
@@ -326,7 +338,7 @@ The server includes input validation, but consider additional measures:
 3. **Module not found**:
    ```bash
    # Ensure virtual environment is activated
-   source venv/bin/activate
+   source .venv/bin/activate
    pip install -r requirements.txt
    ```
 
@@ -351,7 +363,7 @@ if __name__ == '__main__':
 Deploy multiple instances behind a load balancer:
 
 ```nginx
-upstream crypto_heatmap_backend {
+upstream mcp_liquidation_backend {
     server 127.0.0.1:5001;
     server 127.0.0.1:5002;
     server 127.0.0.1:5003;
@@ -359,7 +371,7 @@ upstream crypto_heatmap_backend {
 
 server {
     location / {
-        proxy_pass http://crypto_heatmap_backend;
+        proxy_pass http://mcp_liquidation_backend;
     }
 }
 ```
@@ -387,10 +399,10 @@ Backup important files:
 #!/bin/bash
 # backup-script.sh
 DATE=$(date +%Y%m%d_%H%M%S)
-tar -czf /backups/crypto-heatmap-mcp-$DATE.tar.gz \
-    /home/ubuntu/crypto_heatmap_mcp \
-    /etc/nginx/sites-available/crypto-heatmap-mcp \
-    /etc/systemd/system/crypto-heatmap-mcp.service
+tar -czf /backups/mcp-liquidation-map-$DATE.tar.gz \
+    /home/ubuntu/mcp-liquidation-map \
+    /etc/nginx/sites-available/mcp-liquidation-map \
+    /etc/systemd/system/mcp-liquidation-map.service
 ```
 
 ## Support and Maintenance
@@ -401,17 +413,17 @@ tar -czf /backups/crypto-heatmap-mcp-$DATE.tar.gz \
    ```bash
    pip list --outdated
    pip install --upgrade package-name
-   pip freeze > requirements.txt
+   # Update requirements.txt manually or via pip-tools once changes are verified
    ```
 
 2. **Monitor logs**:
    ```bash
-   sudo journalctl -u crypto-heatmap-mcp --since "1 hour ago"
+   sudo journalctl -u mcp-liquidation-map --since "1 hour ago"
    ```
 
 3. **Check service status**:
    ```bash
-   sudo systemctl status crypto-heatmap-mcp
+   sudo systemctl status mcp-liquidation-map
    ```
 
 4. **Test endpoints**:

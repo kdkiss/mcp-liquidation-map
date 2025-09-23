@@ -103,27 +103,24 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 1. **Clone or extract the project**:
    ```bash
-   cd crypto_heatmap_mcp
+   cd mcp-liquidation-map
    ```
 
-2. **Activate the virtual environment**:
+2. **Create (optional) virtual environment**:
    ```bash
-   source venv/bin/activate
+   python -m venv .venv
+   source .venv/bin/activate
    ```
+   Use your preferred virtual environment tooling if you already have one configured.
 
-3. **Install dependencies** (already included):
+3. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure BrowserCat access** (optional, for real heatmap capture):
-   ```bash
-   export BROWSERCAT_API_KEY="your-api-key-here"
-   # Optional overrides if you self-host BrowserCat or need a longer timeout
-   export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
-   export BROWSERCAT_TIMEOUT="45"  # seconds
-   ```
-   Get a free API key at: https://browsercat.xyz/mcp
+4. **Configure environment variables** (see [Configuration](#configuration) for details).
+
+
 
 5. **Apply database migrations** (run this before starting the server to create/update the schema):
    ```bash
@@ -164,7 +161,7 @@ Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
 ### File Structure
 
 ```
-crypto_heatmap_mcp/
+mcp-liquidation-map/
 ├── src/
 │   ├── config.py                   # Environment-driven configuration
 │   ├── main.py                     # Main Flask application
@@ -177,10 +174,20 @@ crypto_heatmap_mcp/
 │   ├── database/
 │   │   └── migrations/            # Alembic migration environment
 │   └── static/                    # Static files
-├── venv/                          # Virtual environment
 ├── requirements.txt               # Python dependencies
 └── README.md                      # This file
 ```
+
+## Configuration
+
+Set the following environment variables to customise the server. Values shown in parentheses are defaults used when a variable
+is not defined.
+
+- `BROWSERCAT_API_KEY`: BrowserCat API key for real heatmap captures (no default, simulated payloads used when unset). Get a free key at https://browsercat.xyz/mcp.
+- `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP base URL (`https://server.smithery.ai/@dmaznest/browsercat-mcp-server`).
+- `DATABASE_URI`: Database connection string (`sqlite:///src/database/app.db`).
+- `DEBUG`: Enable Flask debug mode when set to a truthy value (disabled by default).
+- `SECRET_KEY`: Flask secret key used for session signing (`dev-secret-key`).
 
 ## Smithery MCP Integration
 
