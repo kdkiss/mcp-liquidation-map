@@ -145,14 +145,26 @@ def capture_heatmap():
             heatmap_result = browsercat_client.capture_coinglass_heatmap(symbol, time_period)
 
             if "error" in heatmap_result:
-                logger.error(f"BrowserCat heatmap capture failed: {heatmap_result['error']}")
+                status_code = heatmap_result.get('status_code')
+                logger.error(
+                    "BrowserCat heatmap capture failed (status=%s): %s",
+                    status_code,
+                    heatmap_result['error'],
+                )
                 response_payload = {
                     'error': 'Failed to capture heatmap via BrowserCat.',
                     'browsercat_error': heatmap_result['error'],
+                    'browsercat_status_code': status_code,
                     'symbol': symbol,
                     'time_period': time_period,
                     'fallback_provided': False
                 }
+
+                if 'response' in heatmap_result:
+                    response_payload['browsercat_response'] = heatmap_result['response']
+
+                if 'response_text' in heatmap_result:
+                    response_payload['browsercat_response_text'] = heatmap_result['response_text']
 
                 if allow_simulated:
                     response_payload['fallback'] = _build_simulated_payload(symbol, time_period)
@@ -173,6 +185,7 @@ def capture_heatmap():
             response_payload = {
                 'error': 'BrowserCat client error while capturing heatmap.',
                 'browsercat_error': str(browsercat_error),
+                'browsercat_status_code': getattr(browsercat_error, 'status_code', None),
                 'symbol': symbol,
                 'time_period': time_period,
                 'fallback_provided': False

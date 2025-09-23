@@ -116,9 +116,12 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    pip install -r requirements.txt
    ```
 
-4. **Set up BrowserCat API Key** (optional, for real heatmap capture):
+4. **Configure BrowserCat access** (optional, for real heatmap capture):
    ```bash
    export BROWSERCAT_API_KEY="your-api-key-here"
+   # Optional overrides if you self-host BrowserCat or need a longer timeout
+   export BROWSERCAT_BASE_URL="https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+   export BROWSERCAT_TIMEOUT="45"  # seconds
    ```
    Get a free API key at: https://browsercat.xyz/mcp
 
@@ -169,8 +172,9 @@ crypto_heatmap_mcp/
 This server integrates with Smithery's Model Context Protocol ecosystem:
 
 ### BrowserCat MCP Server
-- **URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`
+- **Default URL**: `https://server.smithery.ai/@dmaznest/browsercat-mcp-server` (override with `BROWSERCAT_BASE_URL` if needed)
 - **Purpose**: Browser automation for capturing Coinglass heatmaps
+- **Timeout**: Requests default to 30 seconds and can be adjusted via `BROWSERCAT_TIMEOUT`
 - **Tools Used**:
   - `browsercat_navigate`: Navigate to web pages
   - `browsercat_screenshot`: Capture screenshots

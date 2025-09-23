@@ -5,70 +5,162 @@ This module provides a client interface to interact with the BrowserCat MCP serv
 for browser automation tasks like navigation, screenshot capture, and JavaScript execution.
 """
 
+import json
 import logging
 import os
+import time
 from typing import Any, Dict, Optional
 
 import requests
+from requests.exceptions import RequestException
+
 
 logger = logging.getLogger(__name__)
 
 class BrowserCatMCPClient:
     """Client for interacting with BrowserCat MCP server via Smithery"""
-    
-    def __init__(self, api_key: Optional[str] = None):
-        """
-        Initialize the BrowserCat MCP client
-        
+
+    DEFAULT_BASE_URL = "https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
+    DEFAULT_TIMEOUT = 30
+    RETRY_STATUS_CODES = {408, 409, 425, 429, 500, 502, 503, 504}
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        timeout: Optional[float] = None,
+        max_retries: int = 3,
+        backoff_factor: float = 0.5,
+    ):
+        """Initialize the BrowserCat MCP client.
+
         Args:
-            api_key: BrowserCat API key (can also be set via BROWSERCAT_API_KEY env var)
+            api_key: BrowserCat API key (can also be set via BROWSERCAT_API_KEY env var).
+            base_url: Base URL for the BrowserCat MCP server (defaults to env or Smithery URL).
+            timeout: Request timeout in seconds (defaults to env or 30 seconds).
+            max_retries: Maximum retry attempts for transient failures.
+            backoff_factor: Exponential backoff factor applied between retries.
         """
-        self.api_key = api_key or os.getenv('BROWSERCAT_API_KEY')
-        self.base_url = "https://server.smithery.ai/@dmaznest/browsercat-mcp-server"
-        
+
+        env_base_url = os.getenv("BROWSERCAT_BASE_URL")
+        env_timeout = os.getenv("BROWSERCAT_TIMEOUT")
+
+        self.api_key = api_key or os.getenv("BROWSERCAT_API_KEY")
+        self.base_url = base_url or env_base_url or self.DEFAULT_BASE_URL
+        self.timeout = self._resolve_timeout(timeout, env_timeout)
+        self.max_retries = max(1, max_retries)
+        self.backoff_factor = max(0.0, backoff_factor)
+        self._session = requests.Session()
+
         if not self.api_key:
-            logger.warning("No BrowserCat API key provided. Some functionality may be limited.")
+            logger.warning(
+                "No BrowserCat API key provided. Some functionality may be limited."
+            )
+
+    @classmethod
+    def _resolve_timeout(cls, timeout_arg: Optional[float], env_timeout: Optional[str]) -> float:
+        """Resolve timeout precedence and ensure a valid float value."""
+
+        if timeout_arg is not None:
+            return float(timeout_arg)
+
+        if env_timeout:
+            try:
+                return float(env_timeout)
+            except (TypeError, ValueError):
+                logger.warning(
+                    "Invalid BROWSERCAT_TIMEOUT value '%s'. Falling back to default.",
+                    env_timeout,
+                )
+
+        return float(cls.DEFAULT_TIMEOUT)
+
+    def _sleep_with_backoff(self, attempt: int) -> None:
+        """Sleep using exponential backoff based on the attempt count."""
+
+        if self.backoff_factor <= 0:
+            return
+
+        delay = self.backoff_factor * (2 ** attempt)
+        time.sleep(delay)
+
+    def _should_retry(self, status_code: Optional[int]) -> bool:
+        """Return True when the response status warrants a retry."""
+
+        if status_code is None:
+            return True
+
+        return status_code in self.RETRY_STATUS_CODES
     
     def _make_request(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         Make a request to the BrowserCat MCP server
-        
+
         Args:
             tool_name: Name of the tool to call
             arguments: Arguments for the tool
-            
+
         Returns:
             Response from the MCP server
         """
-        try:
-            headers = {
-                'Content-Type': 'application/json',
-            }
-            
-            if self.api_key:
-                headers['Authorization'] = f'Bearer {self.api_key}'
-            
-            payload = {
-                "tool": tool_name,
-                "arguments": arguments
-            }
-            
-            response = requests.post(
-                f"{self.base_url}/tools/{tool_name}",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.error(f"BrowserCat MCP request failed: {response.status_code} - {response.text}")
-                return {"error": f"Request failed with status {response.status_code}"}
-                
-        except Exception as e:
-            logger.error(f"Error making BrowserCat MCP request: {e}")
-            return {"error": str(e)}
+        headers = {
+            "Content-Type": "application/json",
+        }
+
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        payload = {"tool": tool_name, "arguments": arguments}
+
+        last_error: Optional[Dict[str, Any]] = None
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self._session.post(
+                    f"{self.base_url}/tools/{tool_name}",
+                    headers=headers,
+                    json=payload,
+                    timeout=self.timeout,
+                )
+
+                if response.status_code == 200:
+                    return response.json()
+
+                error_details: Dict[str, Any] = {
+                    "error": f"Request failed with status {response.status_code}",
+                    "status_code": response.status_code,
+                }
+
+                try:
+                    error_details["response"] = response.json()
+                except (json.JSONDecodeError, ValueError):
+                    error_details["response_text"] = response.text
+
+                logger.error(
+                    "BrowserCat MCP request failed: %s - %s",
+                    response.status_code,
+                    response.text,
+                )
+
+                last_error = error_details
+
+                if attempt < self.max_retries - 1 and self._should_retry(response.status_code):
+                    self._sleep_with_backoff(attempt)
+                    continue
+
+                return error_details
+
+            except RequestException as exc:
+                logger.error("Error making BrowserCat MCP request: %s", exc)
+                last_error = {"error": str(exc), "status_code": None}
+
+                if attempt < self.max_retries - 1 and self._should_retry(None):
+                    self._sleep_with_backoff(attempt)
+                    continue
+
+                return last_error
+
+        return last_error or {"error": "Unknown error", "status_code": None}
     
     def navigate(self, url: str) -> Dict[str, Any]:
         """
