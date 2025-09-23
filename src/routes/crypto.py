@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify, request
-import requests
-import os
-import time
-from datetime import datetime
 import logging
+import os
+from datetime import datetime
+
+import requests
+from flask import Blueprint, jsonify, request
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
