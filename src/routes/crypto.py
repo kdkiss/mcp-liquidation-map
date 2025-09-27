@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 
 import requests
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
+
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
