@@ -42,15 +42,16 @@ dev = [
 dev = "smithery.cli.dev:main"
 playground = "smithery.cli.playground:main"
 
+[tool.setuptools]
+py-modules = ["smithery_entry"]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["src", "."]
 include = ["mcp_liquidation_map*", "marshmallow*"]
 
-[tool.setuptools]
-py-modules = ["smithery_entry"]
-
 [tool.setuptools.package-data]
-"src" = [
+"mcp_liquidation_map" = [
     "static/*",
     "static/**/*",
     "database/*.db",
