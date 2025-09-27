@@ -8,7 +8,11 @@ from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel, Field
 from smithery.decorators import smithery
 
-from src.routes.crypto import build_crypto_price_result, build_heatmap_result, ServiceResult
+from mcp_liquidation_map.routes.crypto import (
+    ServiceResult,
+    build_crypto_price_result,
+    build_heatmap_result,
+)
 
 
 class SessionConfig(BaseModel):

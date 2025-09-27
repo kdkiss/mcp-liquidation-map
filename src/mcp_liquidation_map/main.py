@@ -11,10 +11,10 @@ from flask import Flask, jsonify, send_from_directory
 from flask_migrate import Migrate
 from sqlalchemy import inspect
 
-from src.config import Config
-from src.models.user import db
-from src.routes.crypto import crypto_bp
-from src.routes.user import user_bp
+from mcp_liquidation_map.config import Config
+from mcp_liquidation_map.models.user import db
+from mcp_liquidation_map.routes.crypto import crypto_bp
+from mcp_liquidation_map.routes.user import user_bp
 
 
 _LOG_LEVELS = {
@@ -68,7 +68,7 @@ def _ensure_user_schema(application: Flask) -> None:
         if not inspector.has_table("user"):
             raise RuntimeError(
                 "ENABLE_USER_API is set but the database schema is missing. "
-                "Run your migrations (e.g. `flask --app src.main db upgrade`)."
+                "Run your migrations (e.g. `flask --app mcp_liquidation_map.main db upgrade`)."
             )
 
 

@@ -8,7 +8,7 @@ import requests
 from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
-from src.services.browsercat_client import browsercat_client
+from mcp_liquidation_map.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
 _FALSY_STRINGS = {'0', 'false', 'no', 'off'}

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from flask import Flask
 
-from src.routes.crypto import crypto_bp
+from mcp_liquidation_map.routes.crypto import crypto_bp
 
 
 class CryptoBlueprintLoggingTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class CryptoBlueprintLoggingTests(unittest.TestCase):
             app.logger.handlers = [collector]
             app.logger.setLevel(logging.INFO)
             with app.test_client() as client, patch(
-                'src.routes.crypto.browsercat_client.capture_coinglass_heatmap',
+                'mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap',
                 side_effect=RuntimeError('boom'),
             ):
                 response = client.get('/api/capture_heatmap?symbol=BTC&time_period=24%20hour')
@@ -48,7 +48,7 @@ class ConfigureLoggingTests(unittest.TestCase):
         self.original_handlers = list(self.root_logger.handlers)
         self.original_level = self.root_logger.level
         self.original_app_log_level = os.environ.get('APP_LOG_LEVEL')
-        self.main_module = importlib.import_module('src.main')
+        self.main_module = importlib.import_module('mcp_liquidation_map.main')
 
     def tearDown(self):
         for handler in list(self.root_logger.handlers):

@@ -7,9 +7,14 @@ import pytest
 
 
 def load_config_module(module_name: str = "test_config_module"):
-    """Load ``src.config`` under an isolated module name."""
+    """Load ``mcp_liquidation_map.config`` under an isolated module name."""
 
-    config_path = Path(__file__).resolve().parents[1] / "src" / "config.py"
+    config_path = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "mcp_liquidation_map"
+        / "config.py"
+    )
     spec = importlib.util.spec_from_file_location(module_name, config_path)
     if spec is None or spec.loader is None:  # pragma: no cover - defensive
         raise RuntimeError("Unable to load config module for testing")
