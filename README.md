@@ -200,7 +200,9 @@ is not defined.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP base URL (`https://server.smithery.ai/@dmaznest/browsercat-mcp-server`).
 - `DATABASE_URI`: Database connection string (`sqlite:///src/database/app.db`).
 - `DEBUG`: Enable Flask debug mode when set to a truthy value (disabled by default).
-- `SECRET_KEY`: Flask secret key used for session signing (`dev-secret-key`).
+- `SECRET_KEY`: Flask secret key used for session signing. Required when `DEBUG`
+  is false; omitted values cause startup to fail in production. When `DEBUG` is
+  true the app falls back to a development-only default (`dev-secret-key`).
 
 ## Smithery MCP Integration
 

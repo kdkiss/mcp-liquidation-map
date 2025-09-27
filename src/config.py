@@ -26,7 +26,7 @@ def _str_to_bool(value: Optional[str], default: bool = False) -> bool:
 class Config:
     """Base configuration loaded by the Flask application."""
 
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+    SECRET_KEY = os.getenv("SECRET_KEY")
     DEBUG = _str_to_bool(os.getenv("DEBUG"), default=False)
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URI", f"sqlite:///{DEFAULT_SQLITE_PATH}"
@@ -35,6 +35,21 @@ class Config:
 
 
 def get_config() -> Config:
-    """Return the default :class:`Config` instance."""
+    """Return the default :class:`Config` instance.
 
-    return Config()
+    Ensures that a ``SECRET_KEY`` is provided when ``DEBUG`` is disabled so
+    deployments fail fast with a clear error instead of silently running with a
+    weak default secret.
+    """
+
+    config = Config()
+
+    if not config.SECRET_KEY:
+        if config.DEBUG:
+            config.SECRET_KEY = "dev-secret-key"
+        else:
+            raise RuntimeError(
+                "SECRET_KEY environment variable must be set when DEBUG is False"
+            )
+
+    return config
