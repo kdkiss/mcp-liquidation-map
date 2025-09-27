@@ -2,7 +2,7 @@ import json
 import os
 from unittest.mock import Mock
 
-from src.services.browsercat_client import BrowserCatMCPClient
+from mcp_liquidation_map.services.browsercat_client import BrowserCatMCPClient
 
 
 def _restore_env(key: str, original_value):

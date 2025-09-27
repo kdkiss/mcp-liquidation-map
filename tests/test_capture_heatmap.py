@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from flask import Flask
 
-from src.routes.crypto import crypto_bp
+from mcp_liquidation_map.routes.crypto import crypto_bp
 
 
 class CaptureHeatmapRouteTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
     def tearDown(self):
         os.environ.pop('ENABLE_SIMULATED_HEATMAP', None)
 
-    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    @patch('mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_success(self, mock_capture):
         mock_capture.return_value = {'screenshot_path': '/tmp/test.png'}
 
@@ -31,7 +31,7 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         self.assertNotIn('fallback', data)
         mock_capture.assert_called_once_with('BTC', '24 hour')
 
-    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    @patch('mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_uses_path_when_screenshot_missing(self, mock_capture):
         mock_capture.return_value = {'path': '/tmp/fallback.png'}
 
@@ -44,7 +44,7 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         self.assertEqual(data['time_period'], '24 hour')
         mock_capture.assert_called_once_with('BTC', '24 hour')
 
-    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    @patch('mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_browsercat_failure_returns_default_fallback(self, mock_capture):
         mock_capture.return_value = {'error': 'Request failed with status 401'}
 
@@ -61,7 +61,7 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         self.assertTrue(fallback['simulated'])
         mock_capture.assert_called_once_with('ETH', '12 hour')
 
-    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    @patch('mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_browsercat_failure_opt_out_of_fallback(self, mock_capture):
         mock_capture.return_value = {'error': 'Request failed with status 401'}
 
@@ -76,7 +76,7 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         self.assertEqual(data['browsercat_error'], 'Request failed with status 401')
         mock_capture.assert_called_once_with('ETH', '12 hour')
 
-    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    @patch('mcp_liquidation_map.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_browsercat_exception_with_fallback(self, mock_capture):
         mock_capture.side_effect = RuntimeError('network outage')
 

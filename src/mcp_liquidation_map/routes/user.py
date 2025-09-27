@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from marshmallow import Schema, ValidationError, fields
 from sqlalchemy.exc import IntegrityError
 
-from src.models.user import User, db
+from mcp_liquidation_map.models.user import User, db
 
 
 user_bp = Blueprint('user', __name__)

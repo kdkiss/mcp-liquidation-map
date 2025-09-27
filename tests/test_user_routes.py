@@ -2,8 +2,8 @@ import unittest
 
 from flask import Flask
 
-from src.models.user import db
-from src.routes.user import user_bp
+from mcp_liquidation_map.models.user import db
+from mcp_liquidation_map.routes.user import user_bp
 
 
 class UserRouteTests(unittest.TestCase):

@@ -43,7 +43,8 @@ dev = "smithery.cli.dev:main"
 playground = "smithery.cli.playground:main"
 
 [tool.setuptools.packages.find]
-include = ["src*", "marshmallow*"]
+where = ["src", "."]
+include = ["mcp_liquidation_map*", "marshmallow*"]
 
 [tool.setuptools.package-data]
 "src" = [
@@ -53,7 +54,7 @@ include = ["src*", "marshmallow*"]
 ]
 
 [tool.smithery]
-server = "src.server:create_server"
+server = "mcp_liquidation_map.server:create_server"
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", "src"]
