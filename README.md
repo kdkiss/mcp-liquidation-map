@@ -122,10 +122,13 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 
 
-5. **Apply database migrations** (run this before starting the server to create/update the schema):
+5. **(Optional) Prepare the database schema**. The bundled SQLite database starts empty and does not include migrations out of the box. You only need to run migrations after you create them:
    ```bash
+   flask --app src.main db init        # run once if migrations/ does not exist yet
+   flask --app src.main db migrate -m "initial schema"
    flask --app src.main db upgrade
    ```
+   Skip these commands if you do not plan to use the database features yet.
 
 6. **Run the server**:
    ```bash
@@ -133,6 +136,10 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    ```
 
 The server will start on `http://localhost:5001`
+
+### Example User Blueprint
+
+The `/api/users` endpoints provided by `src/routes/user.py` are registered by default as an example blueprint that demonstrates database usage. Remove the line that imports `user_bp` and the corresponding `app.register_blueprint(user_bp, url_prefix="/api")` call in `src/main.py` if you want to disable these routes.
 
 ## Logging
 
@@ -167,7 +174,7 @@ mcp-liquidation-map/
 │   ├── main.py                     # Main Flask application
 │   ├── routes/
 │   │   ├── crypto.py              # Cryptocurrency API endpoints
-│   │   └── user.py                # Template user routes (unused)
+│   │   └── user.py                # Example user routes blueprint (registered by default)
 │   ├── services/
 │   │   └── browsercat_client.py   # BrowserCat MCP integration
 │   ├── models/                    # Database models (unused)

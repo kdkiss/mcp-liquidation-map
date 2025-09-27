@@ -23,7 +23,15 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
    python src/main.py
    ```
 
-4. **Test the endpoints**:
+4. **(Optional) Generate initial database migration**:
+   The default SQLite database is empty. Run these commands only if you intend to persist data (for example, when using the example `/api/users` routes):
+   ```bash
+   flask --app src.main db init        # run once if migrations/ does not exist yet
+   flask --app src.main db migrate -m "initial schema"
+   flask --app src.main db upgrade
+   ```
+
+5. **Test the endpoints**:
    ```bash
    curl "http://localhost:5001/api/health"
    curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
