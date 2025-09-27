@@ -77,11 +77,17 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
    RUN pip install --no-cache-dir -r requirements.txt
 
    COPY src/ ./src/
+   COPY marshmallow/ ./marshmallow/
 
    EXPOSE 5001
 
    CMD ["python", "src/main.py"]
    ```
+
+   The extra `marshmallow/` copy step is required because this project ships a
+   lightweight shim that patches a compatibility gap with older Marshmallow
+   consumers. Without copying it into the container image, the runtime import
+   hook is missing and requests that depend on the shim will fail.
 
 2. **Build and run**:
    ```bash
