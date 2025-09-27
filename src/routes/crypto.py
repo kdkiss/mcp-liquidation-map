@@ -156,7 +156,7 @@ def capture_heatmap():
             if "error" in heatmap_result:
                 _get_logger().error(
                     f"BrowserCat heatmap capture failed: {heatmap_result['error']}"
-
+                )
                 status_code = heatmap_result.get('status_code')
                 logger.error(
                     "BrowserCat heatmap capture failed (status=%s): %s",
