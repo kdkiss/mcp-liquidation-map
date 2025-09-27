@@ -102,7 +102,9 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
   `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`.
 - `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/database/app.db`.
 - `FLASK_ENV`: Set to `production` for production deployment.
-- `SECRET_KEY`: Flask secret key. Defaults to `dev-secret-key`; set to a unique value in production.
+- `SECRET_KEY`: Flask secret key. When `DEBUG` is false this value is required
+  and the app will abort on startup if it is missing. A `dev-secret-key` default
+  is only applied for local debug sessions.
 
 
 ### Setting Environment Variables
