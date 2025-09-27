@@ -32,6 +32,7 @@ class Config:
         "DATABASE_URI", f"sqlite:///{DEFAULT_SQLITE_PATH}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    ENABLE_USER_API = _str_to_bool(os.getenv("ENABLE_USER_API"), default=False)
 
 
 def get_config() -> Config:
