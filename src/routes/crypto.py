@@ -163,11 +163,13 @@ def capture_heatmap():
 
         allow_simulated_override = _parse_bool(allow_simulated_param)
         env_allow_simulated = _parse_bool(os.getenv('ENABLE_SIMULATED_HEATMAP'))
-        allow_simulated = (
-            allow_simulated_override
-            if allow_simulated_override is not None
-            else bool(env_allow_simulated)
-        )
+
+        if allow_simulated_override is not None:
+            allow_simulated = allow_simulated_override
+        elif env_allow_simulated is not None:
+            allow_simulated = env_allow_simulated
+        else:
+            allow_simulated = True
 
         # Use BrowserCat MCP client to capture heatmap
         try:

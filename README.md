@@ -39,7 +39,7 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 **Parameters**:
 - `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH")
 - `time_period` (string, optional, default: "24 hour"): Time period ("12 hour", "24 hour", "1 month", "3 month")
-- `allow_simulated` (boolean, optional): When `true`, include a simulated payload if BrowserCat is unavailable.
+- `allow_simulated` (boolean, optional): Override fallback behaviour. `false` disables the simulated payload, `true` forces it, and omitting the parameter defers to the `ENABLE_SIMULATED_HEATMAP` environment variable (which defaults to the simulated fallback being enabled).
 
 **Example Request**:
 ```bash
@@ -77,7 +77,7 @@ curl "http://localhost:5001/api/capture_heatmap?symbol=BTC&time_period=24%20hour
 }
 ```
 
-Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEATMAP=true` environment variable) to include the fallback payload for local development. Production environments should rely on the HTTP 502/503 status codes without the simulated payload.
+Simulated payloads are returned by default whenever BrowserCat fails (including when the API key is missing). To opt out, pass `allow_simulated=false` or set `ENABLE_SIMULATED_HEATMAP=false`. Use `allow_simulated=true` (or `ENABLE_SIMULATED_HEATMAP=true`) to explicitly force the fallback when needed for local development.
 
 ### 3. Health Check
 

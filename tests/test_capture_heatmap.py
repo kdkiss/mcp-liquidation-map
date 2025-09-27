@@ -45,10 +45,29 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         mock_capture.assert_called_once_with('BTC', '24 hour')
 
     @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
-    def test_capture_heatmap_browsercat_failure_without_fallback(self, mock_capture):
+    def test_capture_heatmap_browsercat_failure_returns_default_fallback(self, mock_capture):
         mock_capture.return_value = {'error': 'Request failed with status 401'}
 
         response = self.client.get('/api/capture_heatmap?symbol=ETH&time_period=12%20hour')
+
+        self.assertEqual(response.status_code, 502)
+        data = response.get_json()
+        self.assertTrue(data['fallback_provided'])
+        self.assertIn('fallback', data)
+        self.assertEqual(data['browsercat_error'], 'Request failed with status 401')
+        fallback = data['fallback']
+        self.assertEqual(fallback['symbol'], 'ETH')
+        self.assertEqual(fallback['time_period'], '12 hour')
+        self.assertTrue(fallback['simulated'])
+        mock_capture.assert_called_once_with('ETH', '12 hour')
+
+    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    def test_capture_heatmap_browsercat_failure_opt_out_of_fallback(self, mock_capture):
+        mock_capture.return_value = {'error': 'Request failed with status 401'}
+
+        response = self.client.get(
+            '/api/capture_heatmap?symbol=ETH&time_period=12%20hour&allow_simulated=false'
+        )
 
         self.assertEqual(response.status_code, 502)
         data = response.get_json()
