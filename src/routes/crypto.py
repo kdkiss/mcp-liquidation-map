@@ -1,12 +1,10 @@
-from flask import Blueprint, jsonify, request, current_app
-import requests
-
 import logging
 import os
 from datetime import datetime
 
 import requests
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
+from werkzeug.exceptions import BadRequest
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
@@ -36,6 +34,7 @@ def get_crypto_price():
     - price (string): Formatted price (e.g., "$30,000.00")
     - error (string, optional): Error message if operation fails
     """
+    symbol = None
     try:
         if request.method == 'GET':
             symbol = request.args.get('symbol')
@@ -78,9 +77,23 @@ def get_crypto_price():
         else:
             return jsonify({'error': f'Failed to fetch price for {symbol}'}), 500
             
+    except BadRequest as json_error:
+        symbol_for_log = symbol or 'unknown'
+        _get_logger().warning(
+            "Invalid JSON payload while fetching price for symbol=%s: %s",
+            symbol_for_log,
+            json_error,
+        )
+        return jsonify({'error': 'Invalid JSON payload.'}), 400
     except Exception as e:
-        _get_logger().error(f"Error fetching {symbol} price: {e}")
-        return jsonify({'error': str(e)}), 500
+        symbol_for_log = symbol or 'unknown'
+        _get_logger().error(
+            "Error fetching price for symbol=%s: %s",
+            symbol_for_log,
+            e,
+            exc_info=True,
+        )
+        return jsonify({'error': 'Internal server error.'}), 500
 
 def _parse_bool(value):
     """Parse common truthy/falsey values to booleans."""
@@ -127,6 +140,8 @@ def capture_heatmap():
     - image_path (string): Path to captured image file
     - error (string, optional): Error message if operation fails
     """
+    symbol = None
+    time_period = None
     try:
         if request.method == 'GET':
             symbol = request.args.get('symbol', 'BTC')
@@ -159,7 +174,9 @@ def capture_heatmap():
 
             if "error" in heatmap_result:
                 _get_logger().error(
-                    f"BrowserCat heatmap capture failed: {heatmap_result['error']}"
+                    "BrowserCat heatmap capture failed: %s",
+                    heatmap_result['error'],
+
                 )
 
                 status_code = heatmap_result.get('status_code')
@@ -204,7 +221,15 @@ def capture_heatmap():
                 })
                 
         except Exception as browsercat_error:
-            _get_logger().error(f"BrowserCat client error: {browsercat_error}")
+            symbol_for_log = symbol or 'unknown'
+            time_period_for_log = time_period or 'unknown'
+            _get_logger().error(
+                "BrowserCat client error for symbol=%s, time_period=%s: %s",
+                symbol_for_log,
+                time_period_for_log,
+                browsercat_error,
+                exc_info=True,
+            )
             response_payload = {
                 'error': 'BrowserCat client error while capturing heatmap.',
                 'browsercat_error': str(browsercat_error),
@@ -220,9 +245,27 @@ def capture_heatmap():
 
             return jsonify(response_payload), 503
         
+    except BadRequest as json_error:
+        symbol_for_log = symbol or 'unknown'
+        time_period_for_log = time_period or 'unknown'
+        _get_logger().warning(
+            "Invalid JSON payload for capture_heatmap (symbol=%s, time_period=%s): %s",
+            symbol_for_log,
+            time_period_for_log,
+            json_error,
+        )
+        return jsonify({'error': 'Invalid JSON payload.'}), 400
     except Exception as e:
-        _get_logger().error(f"Error capturing heatmap: {e}")
-        return jsonify({'error': str(e)}), 500
+        symbol_for_log = symbol or 'unknown'
+        time_period_for_log = time_period or 'unknown'
+        _get_logger().error(
+            "Error capturing heatmap for symbol=%s, time_period=%s: %s",
+            symbol_for_log,
+            time_period_for_log,
+            e,
+            exc_info=True,
+        )
+        return jsonify({'error': 'Internal server error.'}), 500
 
 @crypto_bp.route('/health', methods=['GET'])
 def health_check():
