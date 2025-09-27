@@ -94,10 +94,12 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 ### Required Environment Variables
 
 - `BROWSERCAT_API_KEY`: BrowserCat API key for real heatmap capture. Get a free key at https://browsercat.xyz/mcp. Without this
-  key, the server returns simulated responses.
+  key, BrowserCat requests fail and the server automatically falls back to simulated responses (unless explicitly disabled).
 
 ### Optional Environment Variables
 
+- `ENABLE_SIMULATED_HEATMAP`: Force-enable (`true`) or disable (`false`) simulated fallbacks when BrowserCat fails. When unset,
+  simulated payloads are provided by default.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP server URL. Default:
   `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`.
 - `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/database/app.db`.
