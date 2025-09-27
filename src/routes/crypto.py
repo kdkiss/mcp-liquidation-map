@@ -147,7 +147,11 @@ def capture_heatmap():
 
         allow_simulated_override = _parse_bool(allow_simulated_param)
         env_allow_simulated = _parse_bool(os.getenv('ENABLE_SIMULATED_HEATMAP'))
-        allow_simulated = allow_simulated_override if allow_simulated_override is not None else bool(env_allow_simulated)
+        allow_simulated = (
+            allow_simulated_override
+            if allow_simulated_override is not None
+            else bool(env_allow_simulated)
+        )
 
         # Use BrowserCat MCP client to capture heatmap
         try:
@@ -157,6 +161,7 @@ def capture_heatmap():
                 _get_logger().error(
                     f"BrowserCat heatmap capture failed: {heatmap_result['error']}"
                 )
+
                 status_code = heatmap_result.get('status_code')
                 logger.error(
                     "BrowserCat heatmap capture failed (status=%s): %s",
@@ -185,8 +190,14 @@ def capture_heatmap():
                 return jsonify(response_payload), 502
             else:
                 # Success - return actual screenshot path
+                image_path = (
+                    heatmap_result.get('screenshot_path')
+                    or heatmap_result.get('path')
+                    or '/tmp/heatmap.png'
+                )
+
                 return jsonify({
-                    'image_path': heatmap_result.get('screenshot_path', '/tmp/heatmap.png'),
+                    'image_path': image_path,
                     'symbol': symbol,
                     'time_period': time_period,
                     'browsercat_result': heatmap_result
