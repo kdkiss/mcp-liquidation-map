@@ -128,12 +128,14 @@ Simulated payloads are returned by default whenever BrowserCat fails (including 
 
 
 
-5. **(Optional) Prepare the database schema**. The bundled SQLite database starts empty and does not include migrations out of the box. You only need to run migrations after you create them:
-   ```bash
-   flask --app src.main db init        # run once if migrations/ does not exist yet
-   flask --app src.main db migrate -m "initial schema"
-   flask --app src.main db upgrade
-   ```
+5. **(Optional) Prepare the database schema for the user API**. The optional `/api/users` endpoints are disabled by default but require tables when enabled:
+   - **SQLite (default)**: No manual work is required—the app calls `db.create_all()` on startup when `ENABLE_USER_API` is truthy. The SQLite file lives at `src/database/app.db`.
+   - **Other databases**: Run your migrations before enabling the flag:
+     ```bash
+     flask --app src.main db init        # run once if migrations/ does not exist yet
+     flask --app src.main db migrate -m "initial schema"
+     flask --app src.main db upgrade
+     ```
    Skip these commands if you do not plan to use the database features yet.
 
 6. **Run the server**:
@@ -145,7 +147,13 @@ The server will start on `http://localhost:5001`
 
 ### Example User Blueprint
 
-The `/api/users` endpoints provided by `src/routes/user.py` are registered by default as an example blueprint that demonstrates database usage. Remove the line that imports `user_bp` and the corresponding `app.register_blueprint(user_bp, url_prefix="/api")` call in `src/main.py` if you want to disable these routes.
+The `/api/users` endpoints provided by `src/routes/user.py` demonstrate SQLAlchemy usage and are **opt-in**. To enable them:
+
+1. Prepare the database schema (see [Installation Step 5](#installation-and-setup)).
+   - SQLite users can rely on the automatic `db.create_all()` call; other databases must run migrations first.
+2. Set `ENABLE_USER_API=1` (or any truthy value) in your environment before starting the server.
+
+When disabled, the blueprint is not registered and the landing page hides the related UI controls. A new `/api/features` endpoint exposes the feature flag for client-side checks.
 
 ## Logging
 
@@ -180,7 +188,7 @@ mcp-liquidation-map/
 │   ├── main.py                     # Main Flask application
 │   ├── routes/
 │   │   ├── crypto.py              # Cryptocurrency API endpoints
-│   │   └── user.py                # Example user routes blueprint (registered by default)
+│   │   └── user.py                # Example user routes blueprint (enable with ENABLE_USER_API)
 │   ├── services/
 │   │   └── browsercat_client.py   # BrowserCat MCP integration
 │   ├── models/                    # Database models (unused)
@@ -200,6 +208,7 @@ is not defined.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP base URL (`https://server.smithery.ai/@dmaznest/browsercat-mcp-server`).
 - `DATABASE_URI`: Database connection string (`sqlite:///src/database/app.db`).
 - `DEBUG`: Enable Flask debug mode when set to a truthy value (disabled by default).
+- `ENABLE_USER_API`: Opt into registering the example `/api/users` routes (disabled by default).
 - `SECRET_KEY`: Flask secret key used for session signing. Required when `DEBUG`
   is false; omitted values cause startup to fail in production. When `DEBUG` is
   true the app falls back to a development-only default (`dev-secret-key`).
