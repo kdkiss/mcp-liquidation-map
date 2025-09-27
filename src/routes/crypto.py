@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 
 import requests
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
+
 from src.services.browsercat_client import browsercat_client
 
 _TRUTHY_STRINGS = {'1', 'true', 'yes', 'on'}
@@ -162,11 +163,13 @@ def capture_heatmap():
 
         allow_simulated_override = _parse_bool(allow_simulated_param)
         env_allow_simulated = _parse_bool(os.getenv('ENABLE_SIMULATED_HEATMAP'))
-        allow_simulated = (
-            allow_simulated_override
-            if allow_simulated_override is not None
-            else bool(env_allow_simulated)
-        )
+
+        if allow_simulated_override is not None:
+            allow_simulated = allow_simulated_override
+        elif env_allow_simulated is not None:
+            allow_simulated = env_allow_simulated
+        else:
+            allow_simulated = True
 
         # Use BrowserCat MCP client to capture heatmap
         try:

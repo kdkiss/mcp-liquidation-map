@@ -39,7 +39,7 @@ curl "http://localhost:5001/api/get_crypto_price?symbol=BTC"
 **Parameters**:
 - `symbol` (string, required): Cryptocurrency symbol (e.g., "BTC", "ETH")
 - `time_period` (string, optional, default: "24 hour"): Time period ("12 hour", "24 hour", "1 month", "3 month")
-- `allow_simulated` (boolean, optional): When `true`, include a simulated payload if BrowserCat is unavailable.
+- `allow_simulated` (boolean, optional): Override fallback behaviour. `false` disables the simulated payload, `true` forces it, and omitting the parameter defers to the `ENABLE_SIMULATED_HEATMAP` environment variable (which defaults to the simulated fallback being enabled).
 
 **Example Request**:
 ```bash
@@ -77,7 +77,7 @@ curl "http://localhost:5001/api/capture_heatmap?symbol=BTC&time_period=24%20hour
 }
 ```
 
-Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEATMAP=true` environment variable) to include the fallback payload for local development. Production environments should rely on the HTTP 502/503 status codes without the simulated payload.
+Simulated payloads are returned by default whenever BrowserCat fails (including when the API key is missing). To opt out, pass `allow_simulated=false` or set `ENABLE_SIMULATED_HEATMAP=false`. Use `allow_simulated=true` (or `ENABLE_SIMULATED_HEATMAP=true`) to explicitly force the fallback when needed for local development.
 
 ### 3. Health Check
 
@@ -135,12 +135,14 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 
 
-5. **(Optional) Prepare the database schema**. The bundled SQLite database starts empty and does not include migrations out of the box. You only need to run migrations after you create them:
-   ```bash
-   flask --app src.main db init        # run once if migrations/ does not exist yet
-   flask --app src.main db migrate -m "initial schema"
-   flask --app src.main db upgrade
-   ```
+5. **(Optional) Prepare the database schema for the user API**. The optional `/api/users` endpoints are disabled by default but require tables when enabled:
+   - **SQLite (default)**: No manual work is required—the app calls `db.create_all()` on startup when `ENABLE_USER_API` is truthy. The SQLite file lives at `src/database/app.db`.
+   - **Other databases**: Run your migrations before enabling the flag:
+     ```bash
+     flask --app src.main db init        # run once if migrations/ does not exist yet
+     flask --app src.main db migrate -m "initial schema"
+     flask --app src.main db upgrade
+     ```
    Skip these commands if you do not plan to use the database features yet.
 
 6. **Run the server**:
@@ -152,7 +154,13 @@ The server will start on `http://localhost:5001`
 
 ### Example User Blueprint
 
-The `/api/users` endpoints provided by `src/routes/user.py` are registered by default as an example blueprint that demonstrates database usage. Remove the line that imports `user_bp` and the corresponding `app.register_blueprint(user_bp, url_prefix="/api")` call in `src/main.py` if you want to disable these routes.
+The `/api/users` endpoints provided by `src/routes/user.py` demonstrate SQLAlchemy usage and are **opt-in**. To enable them:
+
+1. Prepare the database schema (see [Installation Step 5](#installation-and-setup)).
+   - SQLite users can rely on the automatic `db.create_all()` call; other databases must run migrations first.
+2. Set `ENABLE_USER_API=1` (or any truthy value) in your environment before starting the server.
+
+When disabled, the blueprint is not registered and the landing page hides the related UI controls. A new `/api/features` endpoint exposes the feature flag for client-side checks.
 
 ## Logging
 
@@ -187,7 +195,7 @@ mcp-liquidation-map/
 │   ├── main.py                     # Main Flask application
 │   ├── routes/
 │   │   ├── crypto.py              # Cryptocurrency API endpoints
-│   │   └── user.py                # Example user routes blueprint (registered by default)
+│   │   └── user.py                # Example user routes blueprint (enable with ENABLE_USER_API)
 │   ├── services/
 │   │   └── browsercat_client.py   # BrowserCat MCP integration
 │   ├── models/                    # Database models (unused)
@@ -207,6 +215,7 @@ is not defined.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP base URL (`https://server.smithery.ai/@dmaznest/browsercat-mcp-server`).
 - `DATABASE_URI`: Database connection string (`sqlite:///src/database/app.db`).
 - `DEBUG`: Enable Flask debug mode when set to a truthy value (disabled by default).
+- `ENABLE_USER_API`: Opt into registering the example `/api/users` routes (disabled by default).
 - `SECRET_KEY`: Flask secret key used for session signing. Required when `DEBUG`
   is false; omitted values cause startup to fail in production. When `DEBUG` is
   true the app falls back to a development-only default (`dev-secret-key`).
@@ -301,6 +310,9 @@ For production deployment, consider:
 3. **Configure reverse proxy** (e.g., Nginx)
 4. **Enable HTTPS** for secure communication
 5. **Set up monitoring** and logging
+6. **Copy the custom Marshmallow shim when containerizing** so the
+   `marshmallow/` compatibility layer is available at runtime (see the Docker
+   example in `DEPLOYMENT_GUIDE.md`).
 
 ## License
 

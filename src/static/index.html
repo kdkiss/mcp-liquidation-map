@@ -16,55 +16,67 @@
     </style>
 </head>
 <body>
-    <h1>User API Test</h1>
+    <h1>Crypto Heatmap MCP Server</h1>
+    <p>Use the controls below to explore available API features.</p>
 
-    <!-- Get All Users -->
-    <div class="section">
-        <h2>Get All Users (GET /users)</h2>
-        <button onclick="getUsers()">Get Users</button>
-        <pre id="get-users-result"></pre>
+    <div id="user-api-disabled" class="section" role="status">
+        <h2>Example User API Disabled</h2>
+        <p id="user-api-disabled-message">
+            The optional <code>/api/users</code> endpoints are not enabled. Set the
+            <code>ENABLE_USER_API</code> environment variable to a truthy value and
+            configure the database to opt in.
+        </p>
     </div>
 
-    <!-- Create User -->
-    <div class="section">
-        <h2>Create User (POST /users)</h2>
-        <label for="create-username">Username:</label>
-        <input type="text" id="create-username" name="username"><br>
-        <label for="create-email">Email:</label>
-        <input type="email" id="create-email" name="email"><br>
-        <button onclick="createUser()">Create User</button>
-        <pre id="create-user-result"></pre>
-    </div>
+    <div id="user-api-container" hidden>
+        <!-- Get All Users -->
+        <div class="section">
+            <h2>Get All Users (GET /users)</h2>
+            <button onclick="getUsers()">Get Users</button>
+            <pre id="get-users-result"></pre>
+        </div>
 
-    <!-- Get Single User -->
-    <div class="section">
-        <h2>Get Single User (GET /users/&lt;id&gt;)</h2>
-        <label for="get-user-id">User ID:</label>
-        <input type="number" id="get-user-id" name="user_id"><br>
-        <button onclick="getUser()">Get User</button>
-        <pre id="get-user-result"></pre>
-    </div>
+        <!-- Create User -->
+        <div class="section">
+            <h2>Create User (POST /users)</h2>
+            <label for="create-username">Username:</label>
+            <input type="text" id="create-username" name="username"><br>
+            <label for="create-email">Email:</label>
+            <input type="email" id="create-email" name="email"><br>
+            <button onclick="createUser()">Create User</button>
+            <pre id="create-user-result"></pre>
+        </div>
 
-    <!-- Update User -->
-    <div class="section">
-        <h2>Update User (PUT /users/&lt;id&gt;)</h2>
-        <label for="update-user-id">User ID:</label>
-        <input type="number" id="update-user-id" name="user_id"><br>
-        <label for="update-username">New Username:</label>
-        <input type="text" id="update-username" name="username"><br>
-        <label for="update-email">New Email:</label>
-        <input type="email" id="update-email" name="email"><br>
-        <button onclick="updateUser()">Update User</button>
-        <pre id="update-user-result"></pre>
-    </div>
+        <!-- Get Single User -->
+        <div class="section">
+            <h2>Get Single User (GET /users/&lt;id&gt;)</h2>
+            <label for="get-user-id">User ID:</label>
+            <input type="number" id="get-user-id" name="user_id"><br>
+            <button onclick="getUser()">Get User</button>
+            <pre id="get-user-result"></pre>
+        </div>
 
-    <!-- Delete User -->
-    <div class="section">
-        <h2>Delete User (DELETE /users/&lt;id&gt;)</h2>
-        <label for="delete-user-id">User ID:</label>
-        <input type="number" id="delete-user-id" name="user_id"><br>
-        <button onclick="deleteUser()">Delete User</button>
-        <pre id="delete-user-result"></pre>
+        <!-- Update User -->
+        <div class="section">
+            <h2>Update User (PUT /users/&lt;id&gt;)</h2>
+            <label for="update-user-id">User ID:</label>
+            <input type="number" id="update-user-id" name="user_id"><br>
+            <label for="update-username">New Username:</label>
+            <input type="text" id="update-username" name="username"><br>
+            <label for="update-email">New Email:</label>
+            <input type="email" id="update-email" name="email"><br>
+            <button onclick="updateUser()">Update User</button>
+            <pre id="update-user-result"></pre>
+        </div>
+
+        <!-- Delete User -->
+        <div class="section">
+            <h2>Delete User (DELETE /users/&lt;id&gt;)</h2>
+            <label for="delete-user-id">User ID:</label>
+            <input type="number" id="delete-user-id" name="user_id"><br>
+            <button onclick="deleteUser()">Delete User</button>
+            <pre id="delete-user-result"></pre>
+        </div>
     </div>
 
     <script>
@@ -202,6 +214,29 @@
                 displayError(resultElementId, error);
             }
         }
+
+        async function initialiseFeatureFlags() {
+            const container = document.getElementById('user-api-container');
+            const disabledSection = document.getElementById('user-api-disabled');
+            const disabledMessage = document.getElementById('user-api-disabled-message');
+
+            try {
+                const response = await fetch('/api/features');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.userApiEnabled) {
+                    container.hidden = false;
+                    disabledSection.hidden = true;
+                }
+            } catch (error) {
+                disabledMessage.textContent = `Unable to determine feature availability: ${error.message}`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initialiseFeatureFlags);
     </script>
 </body>
 </html>

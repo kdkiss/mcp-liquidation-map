@@ -1,8 +1,15 @@
+import logging
 import os
 import logging
 
-from flask import Flask, send_from_directory
+import sys
+
+# DON'T CHANGE THIS !!!
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from flask import Flask, jsonify, send_from_directory
 from flask_migrate import Migrate
+from sqlalchemy import inspect
 
 from src.config import Config
 from src.models.user import db
@@ -40,11 +47,40 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.config.from_object(Config)
 
 
-app.register_blueprint(user_bp, url_prefix="/api")
-app.register_blueprint(crypto_bp, url_prefix="/api")
-
 db.init_app(app)
 migrate = Migrate(app, db)
+
+
+def _ensure_user_schema(application: Flask) -> None:
+    """Ensure the user schema exists when the user API is enabled."""
+
+    database_uri = application.config.get("SQLALCHEMY_DATABASE_URI", "")
+    with application.app_context():
+        if database_uri.startswith("sqlite:///"):
+            sqlite_path = database_uri.replace("sqlite:///", "", 1)
+            sqlite_dir = os.path.dirname(sqlite_path)
+            if sqlite_dir:
+                os.makedirs(sqlite_dir, exist_ok=True)
+            db.create_all()
+            return
+
+        inspector = inspect(db.engine)
+        if not inspector.has_table("user"):
+            raise RuntimeError(
+                "ENABLE_USER_API is set but the database schema is missing. "
+                "Run your migrations (e.g. `flask --app src.main db upgrade`)."
+            )
+
+
+if app.config.get("ENABLE_USER_API"):
+    _ensure_user_schema(app)
+    app.register_blueprint(user_bp, url_prefix="/api")
+else:
+    logging.getLogger(__name__).info(
+        "User API disabled. Set ENABLE_USER_API=1 to opt in."
+    )
+
+app.register_blueprint(crypto_bp, url_prefix="/api")
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -61,6 +97,13 @@ def serve(path):
             return send_from_directory(static_folder_path, 'index.html')
         else:
             return "index.html not found", 404
+
+
+@app.route("/api/features", methods=["GET"])
+def feature_flags():
+    """Expose frontend feature flags."""
+
+    return jsonify({"userApiEnabled": bool(app.config.get("ENABLE_USER_API"))})
 
 
 if __name__ == "__main__":

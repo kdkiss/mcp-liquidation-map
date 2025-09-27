@@ -84,11 +84,17 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
    RUN pip install --no-cache-dir -r requirements.txt
 
    COPY src/ ./src/
+   COPY marshmallow/ ./marshmallow/
 
    EXPOSE 5001
 
    CMD ["python", "-m", "src.main"]
    ```
+
+   The extra `marshmallow/` copy step is required because this project ships a
+   lightweight shim that patches a compatibility gap with older Marshmallow
+   consumers. Without copying it into the container image, the runtime import
+   hook is missing and requests that depend on the shim will fail.
 
 2. **Build and run**:
    ```bash
@@ -101,10 +107,12 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 ### Required Environment Variables
 
 - `BROWSERCAT_API_KEY`: BrowserCat API key for real heatmap capture. Get a free key at https://browsercat.xyz/mcp. Without this
-  key, the server returns simulated responses.
+  key, BrowserCat requests fail and the server automatically falls back to simulated responses (unless explicitly disabled).
 
 ### Optional Environment Variables
 
+- `ENABLE_SIMULATED_HEATMAP`: Force-enable (`true`) or disable (`false`) simulated fallbacks when BrowserCat fails. When unset,
+  simulated payloads are provided by default.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP server URL. Default:
   `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`.
 - `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/database/app.db`.
