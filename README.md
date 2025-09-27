@@ -294,6 +294,9 @@ For production deployment, consider:
 3. **Configure reverse proxy** (e.g., Nginx)
 4. **Enable HTTPS** for secure communication
 5. **Set up monitoring** and logging
+6. **Copy the custom Marshmallow shim when containerizing** so the
+   `marshmallow/` compatibility layer is available at runtime (see the Docker
+   example in `DEPLOYMENT_GUIDE.md`).
 
 ## License
 
