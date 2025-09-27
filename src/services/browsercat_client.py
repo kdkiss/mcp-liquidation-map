@@ -42,11 +42,17 @@ class BrowserCatMCPClient:
             backoff_factor: Exponential backoff factor applied between retries.
         """
         self.api_key = api_key or os.getenv('BROWSERCAT_API_KEY')
-        self.base_url = os.getenv(
+        self.base_url = base_url or os.getenv(
             'BROWSERCAT_BASE_URL',
-            "https://server.smithery.ai/@dmaznest/browsercat-mcp-server",
+            self.DEFAULT_BASE_URL,
         )
-        
+        self.timeout = self._resolve_timeout(
+            timeout,
+            os.getenv('BROWSERCAT_TIMEOUT'),
+        )
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+        self._session = requests.Session()
 
         if not self.api_key:
             logger.warning(
