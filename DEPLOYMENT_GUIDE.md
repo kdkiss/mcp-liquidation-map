@@ -18,9 +18,16 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
    ```
    Use whatever virtual environment tooling fits your workflow if you already have one configured.
 
+   Install the project in editable mode if you want its imports to be available globally while you develop locally:
+
+   ```bash
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+
 3. **Run the server**:
    ```bash
-   python src/main.py
+   python -m src.main
    ```
 
 4. **(Optional) Generate initial database migration**:
@@ -81,7 +88,7 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
    EXPOSE 5001
 
-   CMD ["python", "src/main.py"]
+   CMD ["python", "-m", "src.main"]
    ```
 
    The extra `marshmallow/` copy step is required because this project ships a
@@ -219,7 +226,7 @@ Environment=BROWSERCAT_API_KEY=your-api-key-here
 Environment=SECRET_KEY=change-me
 Environment=DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname
 Environment=BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
-ExecStart=/home/ubuntu/mcp-liquidation-map/.venv/bin/python src/main.py
+ExecStart=/home/ubuntu/mcp-liquidation-map/.venv/bin/python -m src.main
 Restart=always
 RestartSec=10
 
