@@ -124,6 +124,13 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    pip install -r requirements-dev.txt
    ```
 
+   If you prefer to make the project importable from anywhere on your machine, install it in editable mode after the
+   dependencies are in place:
+
+   ```bash
+   pip install -e .
+   ```
+
 4. **Configure environment variables** (see [Configuration](#configuration) for details).
 
 
@@ -138,7 +145,7 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
 
 6. **Run the server**:
    ```bash
-   python src/main.py
+   python -m src.main
    ```
 
 The server will start on `http://localhost:5001`
@@ -157,7 +164,7 @@ You can customize the log level by setting the `APP_LOG_LEVEL` environment varia
 
 ```bash
 export APP_LOG_LEVEL=DEBUG
-python src/main.py
+python -m src.main
 ```
 
 Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
@@ -280,7 +287,7 @@ the `DEBUG` environment variable before starting the server:
 
 ```bash
 export DEBUG=1
-python src/main.py
+python -m src.main
 ```
 
 This enables automatic reloading on code changes and detailed error messages.
