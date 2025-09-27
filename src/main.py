@@ -40,7 +40,7 @@ def configure_logging():
 configure_logging()
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+app.config.from_object(Config)
 
 
 app.register_blueprint(user_bp, url_prefix="/api")
