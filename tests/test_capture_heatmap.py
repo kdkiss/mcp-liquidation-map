@@ -62,6 +62,17 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         self.assertTrue(fallback['simulated'])
         self.assertTrue(fallback['image_path'].startswith('/tmp/sol_liquidation_heatmap_'))
 
+    def test_capture_heatmap_invalid_json_returns_400(self):
+        response = self.client.post(
+            '/api/capture_heatmap',
+            data='this-is-not-json',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        data = response.get_json()
+        self.assertEqual(data['error'], 'Invalid JSON payload.')
+
 
 if __name__ == '__main__':
     unittest.main()
