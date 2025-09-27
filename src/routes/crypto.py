@@ -176,6 +176,7 @@ def capture_heatmap():
                 _get_logger().error(
                     "BrowserCat heatmap capture failed: %s",
                     heatmap_result['error'],
+
                 )
 
                 status_code = heatmap_result.get('status_code')
@@ -206,8 +207,14 @@ def capture_heatmap():
                 return jsonify(response_payload), 502
             else:
                 # Success - return actual screenshot path
+                image_path = (
+                    heatmap_result.get('screenshot_path')
+                    or heatmap_result.get('path')
+                    or '/tmp/heatmap.png'
+                )
+
                 return jsonify({
-                    'image_path': heatmap_result.get('screenshot_path', '/tmp/heatmap.png'),
+                    'image_path': image_path,
                     'symbol': symbol,
                     'time_period': time_period,
                     'browsercat_result': heatmap_result

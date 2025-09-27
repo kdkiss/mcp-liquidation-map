@@ -32,6 +32,19 @@ class CaptureHeatmapRouteTests(unittest.TestCase):
         mock_capture.assert_called_once_with('BTC', '24 hour')
 
     @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
+    def test_capture_heatmap_uses_path_when_screenshot_missing(self, mock_capture):
+        mock_capture.return_value = {'path': '/tmp/fallback.png'}
+
+        response = self.client.get('/api/capture_heatmap?symbol=BTC&time_period=24%20hour')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['image_path'], '/tmp/fallback.png')
+        self.assertEqual(data['symbol'], 'BTC')
+        self.assertEqual(data['time_period'], '24 hour')
+        mock_capture.assert_called_once_with('BTC', '24 hour')
+
+    @patch('src.routes.crypto.browsercat_client.capture_coinglass_heatmap')
     def test_capture_heatmap_browsercat_failure_without_fallback(self, mock_capture):
         mock_capture.return_value = {'error': 'Request failed with status 401'}
 
