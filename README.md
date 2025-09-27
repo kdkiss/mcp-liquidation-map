@@ -118,6 +118,12 @@ Use the `allow_simulated=true` query parameter (or set the `ENABLE_SIMULATED_HEA
    pip install -r requirements.txt
    ```
 
+   To install optional developer tooling such as linting utilities, use the development requirements file:
+
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
 4. **Configure environment variables** (see [Configuration](#configuration) for details).
 
 
