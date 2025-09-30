@@ -9,6 +9,9 @@ from flask import Flask
 from mcp_liquidation_map.routes.crypto import crypto_bp
 
 
+os.environ.setdefault('SECRET_KEY', 'test-secret-key')
+
+
 class CryptoBlueprintLoggingTests(unittest.TestCase):
     def test_capture_heatmap_logs_to_current_app_logger(self):
         app = Flask(__name__)
@@ -48,6 +51,12 @@ class ConfigureLoggingTests(unittest.TestCase):
         self.original_handlers = list(self.root_logger.handlers)
         self.original_level = self.root_logger.level
         self.original_app_log_level = os.environ.get('APP_LOG_LEVEL')
+        self.original_secret_key = os.environ.get('SECRET_KEY')
+        if self.original_secret_key is None:
+            os.environ['SECRET_KEY'] = 'test-secret-key'
+        import mcp_liquidation_map.config as config_module
+        importlib.reload(config_module)
+        self.config_module = config_module
         self.main_module = importlib.import_module('mcp_liquidation_map.main')
 
     def tearDown(self):
@@ -62,6 +71,12 @@ class ConfigureLoggingTests(unittest.TestCase):
         else:
             os.environ['APP_LOG_LEVEL'] = self.original_app_log_level
 
+        if self.original_secret_key is None:
+            os.environ.pop('SECRET_KEY', None)
+        else:
+            os.environ['SECRET_KEY'] = self.original_secret_key
+
+        importlib.reload(self.config_module)
         importlib.reload(self.main_module)
 
     def test_configure_logging_respects_existing_handlers(self):
