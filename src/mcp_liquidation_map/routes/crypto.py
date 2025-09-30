@@ -62,7 +62,24 @@ def build_crypto_price_result(
     coin_id = _resolve_coin_id(symbol)
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
 
-    response = requests.get(url, timeout=10)
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.RequestException as request_error:
+        log.error(
+            'Request error while fetching price for %s: %s',
+            symbol,
+            request_error,
+            exc_info=True,
+        )
+        return ServiceResult(
+            {
+                'error': 'Upstream service error while fetching price.',
+                'status_code': 503,
+                'symbol': symbol,
+                'request_error': str(request_error),
+            },
+            503,
+        )
     if response.status_code != 200:
         log.warning('Failed to fetch price for %s (status=%s)', symbol, response.status_code)
         return ServiceResult({
