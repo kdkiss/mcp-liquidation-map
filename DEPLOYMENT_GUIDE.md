@@ -120,6 +120,11 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 - `SECRET_KEY`: Flask secret key. When `DEBUG` is false this value is required
   and the app will abort on startup if it is missing. A `dev-secret-key` default
   is only applied for local debug sessions.
+- `USER_API_TOKEN`: Shared secret that unlocks the optional `/api/users`
+  endpoints. When set, requests must present `Authorization: Bearer
+  $USER_API_TOKEN`. If you enable the user API without configuring the token the
+  service responds with `503 Service Unavailable`, and mismatched or missing
+  bearer tokens yield `401 Unauthorized` responses.
 
 
 ### Setting Environment Variables

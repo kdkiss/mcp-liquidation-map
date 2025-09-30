@@ -33,6 +33,7 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ENABLE_USER_API = _str_to_bool(os.getenv("ENABLE_USER_API"), default=False)
+    USER_API_TOKEN = os.getenv("USER_API_TOKEN")
 
 
 def get_config() -> Config:

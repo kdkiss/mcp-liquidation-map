@@ -1,4 +1,6 @@
-from flask import Blueprint, jsonify, request
+import hmac
+
+from flask import Blueprint, jsonify, request, current_app
 from marshmallow import Schema, ValidationError, fields
 from sqlalchemy.exc import IntegrityError
 
@@ -14,6 +16,27 @@ class UserSchema(Schema):
 
 
 user_schema = UserSchema()
+
+
+@user_bp.before_request
+def require_user_api_token():
+    token = current_app.config.get("USER_API_TOKEN")
+    if not token:
+        return (
+            jsonify({"error": "User API token is not configured."}),
+            503,
+        )
+
+    auth_header = request.headers.get("Authorization", "")
+    scheme, _, supplied_token = auth_header.partition(" ")
+    if scheme.lower() != "bearer" or not supplied_token:
+        return (
+            jsonify({"error": "Missing or invalid authorization token."}),
+            401,
+        )
+
+    if not hmac.compare_digest(supplied_token, token):
+        return jsonify({"error": "Invalid authorization token."}), 401
 
 
 @user_bp.route('/users', methods=['GET'])
