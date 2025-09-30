@@ -1,6 +1,5 @@
 import logging
 import os
-import logging
 
 import sys
 
@@ -11,7 +10,7 @@ from flask import Flask, jsonify, send_from_directory
 from flask_migrate import Migrate
 from sqlalchemy import inspect
 
-from mcp_liquidation_map.config import Config
+from mcp_liquidation_map.config import get_config
 from mcp_liquidation_map.models.user import db
 from mcp_liquidation_map.routes.crypto import crypto_bp
 from mcp_liquidation_map.routes.user import user_bp
@@ -44,7 +43,7 @@ def configure_logging():
 configure_logging()
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config.from_object(Config)
+app.config.from_object(get_config())
 
 
 db.init_app(app)
