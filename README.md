@@ -124,6 +124,12 @@ Simulated payloads are returned by default whenever BrowserCat fails (including 
    pip install -r requirements-dev.txt
    ```
 
+   This adds local tooling like `pytest`, enabling the project's automated test suite via:
+
+   ```bash
+   pytest
+   ```
+
    If you prefer to make the project importable from anywhere on your machine, install it in editable mode after the
    dependencies are in place:
 
