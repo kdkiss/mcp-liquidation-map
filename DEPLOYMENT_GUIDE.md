@@ -27,15 +27,15 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 3. **Run the server**:
    ```bash
-   python -m src.main
+   python -m mcp_liquidation_map.main
    ```
 
 4. **(Optional) Generate initial database migration**:
    The default SQLite database is empty. Run these commands only if you intend to persist data (for example, when using the example `/api/users` routes):
    ```bash
-   flask --app src.main db init        # run once if migrations/ does not exist yet
-   flask --app src.main db migrate -m "initial schema"
-   flask --app src.main db upgrade
+   flask --app mcp_liquidation_map.main db init        # run once if migrations/ does not exist yet
+   flask --app mcp_liquidation_map.main db migrate -m "initial schema"
+   flask --app mcp_liquidation_map.main db upgrade
    ```
 
 5. **Test the endpoints**:
@@ -69,7 +69,7 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 3. **Run with Gunicorn**:
    ```bash
-   gunicorn -c gunicorn.conf.py src.main:app
+   gunicorn -c gunicorn.conf.py mcp_liquidation_map.main:app
    ```
 
 #### Option 2: Using Docker
@@ -88,7 +88,7 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
    EXPOSE 5001
 
-   CMD ["python", "-m", "src.main"]
+   CMD ["python", "-m", "mcp_liquidation_map.main"]
    ```
 
    The extra `marshmallow/` copy step is required because this project ships a
@@ -115,7 +115,7 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
   simulated payloads are provided by default.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP server URL. Default:
   `https://server.smithery.ai/@dmaznest/browsercat-mcp-server`.
-- `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/database/app.db`.
+- `DATABASE_URI`: Database connection string. Defaults to the bundled SQLite database at `sqlite:///src/mcp_liquidation_map/database/app.db`.
 - `FLASK_ENV`: Set to `production` for production deployment.
 - `SECRET_KEY`: Flask secret key. When `DEBUG` is false this value is required
   and the app will abort on startup if it is missing. A `dev-secret-key` default
@@ -226,7 +226,7 @@ Environment=BROWSERCAT_API_KEY=your-api-key-here
 Environment=SECRET_KEY=change-me
 Environment=DATABASE_URI=postgresql+psycopg://user:pass@host:5432/dbname
 Environment=BROWSERCAT_BASE_URL=https://server.smithery.ai/@dmaznest/browsercat-mcp-server
-ExecStart=/home/ubuntu/mcp-liquidation-map/.venv/bin/python -m src.main
+ExecStart=/home/ubuntu/mcp-liquidation-map/.venv/bin/python -m mcp_liquidation_map.main
 Restart=always
 RestartSec=10
 
@@ -357,7 +357,7 @@ The server includes input validation, but consider additional measures:
 2. **Permission denied**:
    ```bash
    # Ensure proper file permissions
-   chmod +x src/main.py
+   chmod +x src/mcp_liquidation_map/main.py
    ```
 
 3. **Module not found**:
@@ -376,7 +376,7 @@ The server includes input validation, but consider additional measures:
 
 Enable debug mode for troubleshooting:
 ```python
-# In src/main.py
+# In src/mcp_liquidation_map/main.py
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
 ```
