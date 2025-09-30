@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mcp-liquidation-map"
 version = "0.1.0"
 description = "Crypto liquidation heatmap MCP server with Flask and Smithery integration."
+license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
