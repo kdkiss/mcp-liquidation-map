@@ -11,6 +11,7 @@ class UserRouteTests(unittest.TestCase):
         self.app = Flask(__name__)
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
         self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        self.app.config['USER_API_TOKEN'] = 'test-token'
         db.init_app(self.app)
 
         with self.app.app_context():
@@ -18,6 +19,7 @@ class UserRouteTests(unittest.TestCase):
 
         self.app.register_blueprint(user_bp, url_prefix='/api')
         self.client = self.app.test_client()
+        self.auth_headers = {'Authorization': 'Bearer test-token'}
 
     def tearDown(self):
         with self.app.app_context():
@@ -25,7 +27,11 @@ class UserRouteTests(unittest.TestCase):
             db.drop_all()
 
     def test_create_user_requires_valid_payload(self):
-        response = self.client.post('/api/users', json={'email': 'not-an-email'})
+        response = self.client.post(
+            '/api/users',
+            json={'email': 'not-an-email'},
+            headers=self.auth_headers,
+        )
         self.assertEqual(response.status_code, 400)
         data = response.get_json()
         self.assertIn('username', data['errors'])
@@ -35,12 +41,14 @@ class UserRouteTests(unittest.TestCase):
         create_response = self.client.post(
             '/api/users',
             json={'username': 'alice', 'email': 'alice@example.com'},
+            headers=self.auth_headers,
         )
         self.assertEqual(create_response.status_code, 201)
 
         duplicate_response = self.client.post(
             '/api/users',
             json={'username': 'bob', 'email': 'alice@example.com'},
+            headers=self.auth_headers,
         )
         self.assertEqual(duplicate_response.status_code, 409)
         duplicate_data = duplicate_response.get_json()
@@ -50,12 +58,14 @@ class UserRouteTests(unittest.TestCase):
         create_response = self.client.post(
             '/api/users',
             json={'username': 'charlie', 'email': 'charlie@example.com'},
+            headers=self.auth_headers,
         )
         user_id = create_response.get_json()['id']
 
         update_response = self.client.put(
             f'/api/users/{user_id}',
             json={'email': 'charlie.new@example.com'},
+            headers=self.auth_headers,
         )
 
         self.assertEqual(update_response.status_code, 200)

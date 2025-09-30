@@ -165,6 +165,12 @@ The `/api/users` endpoints provided by `src/mcp_liquidation_map/routes/user.py` 
 1. Prepare the database schema (see [Installation Step 5](#installation-and-setup)).
    - SQLite users can rely on the automatic `db.create_all()` call; other databases must run migrations first.
 2. Set `ENABLE_USER_API=1` (or any truthy value) in your environment before starting the server.
+3. Generate and set a strong `USER_API_TOKEN` secret before exposing the endpoints:
+   ```bash
+   export USER_API_TOKEN="paste-a-random-string-here"
+   ```
+   Every request to `/api/users` must then include `Authorization: Bearer $USER_API_TOKEN`. When the token is missing the server
+   responds with `503 Service Unavailable`; mismatched or absent bearer tokens return `401 Unauthorized`.
 
 When disabled, the blueprint is not registered and the landing page hides the related UI controls. A new `/api/features` endpoint exposes the feature flag for client-side checks.
 
