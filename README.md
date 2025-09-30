@@ -96,7 +96,7 @@ Simulated payloads are returned by default whenever BrowserCat fails (including 
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - Virtual environment support
 
 ### Installation Steps
@@ -336,7 +336,7 @@ For issues and questions:
 
 ## Changelog
 
-### v1.0.0
+### v0.1.0
 - Initial release
 - Cryptocurrency price fetching via CoinGecko API
 - BrowserCat MCP integration for heatmap capture
