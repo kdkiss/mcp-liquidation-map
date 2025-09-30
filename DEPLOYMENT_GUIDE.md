@@ -76,7 +76,7 @@ This guide provides instructions for deploying the Crypto Heatmap MCP Server in 
 
 1. **Create Dockerfile**:
    ```dockerfile
-   FROM python:3.11-slim
+   FROM python:3.12-slim
 
    WORKDIR /app
 
