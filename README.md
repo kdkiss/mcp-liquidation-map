@@ -142,25 +142,25 @@ Simulated payloads are returned by default whenever BrowserCat fails (including 
 
 
 5. **(Optional) Prepare the database schema for the user API**. The optional `/api/users` endpoints are disabled by default but require tables when enabled:
-   - **SQLite (default)**: No manual work is required—the app calls `db.create_all()` on startup when `ENABLE_USER_API` is truthy. The SQLite file lives at `src/database/app.db`.
+   - **SQLite (default)**: No manual work is required—the app calls `db.create_all()` on startup when `ENABLE_USER_API` is truthy. The SQLite file lives at `src/mcp_liquidation_map/database/app.db`.
    - **Other databases**: Run your migrations before enabling the flag:
      ```bash
-     flask --app src.main db init        # run once if migrations/ does not exist yet
-     flask --app src.main db migrate -m "initial schema"
-     flask --app src.main db upgrade
+     flask --app mcp_liquidation_map.main db init        # run once if migrations/ does not exist yet
+     flask --app mcp_liquidation_map.main db migrate -m "initial schema"
+     flask --app mcp_liquidation_map.main db upgrade
      ```
    Skip these commands if you do not plan to use the database features yet.
 
 6. **Run the server**:
    ```bash
-   python -m src.main
+   python -m mcp_liquidation_map.main
    ```
 
 The server will start on `http://localhost:5001`
 
 ### Example User Blueprint
 
-The `/api/users` endpoints provided by `src/routes/user.py` demonstrate SQLAlchemy usage and are **opt-in**. To enable them:
+The `/api/users` endpoints provided by `src/mcp_liquidation_map/routes/user.py` demonstrate SQLAlchemy usage and are **opt-in**. To enable them:
 
 1. Prepare the database schema (see [Installation Step 5](#installation-and-setup)).
    - SQLite users can rely on the automatic `db.create_all()` call; other databases must run migrations first.
@@ -178,7 +178,7 @@ You can customize the log level by setting the `APP_LOG_LEVEL` environment varia
 
 ```bash
 export APP_LOG_LEVEL=DEBUG
-python -m src.main
+python -m mcp_liquidation_map.main
 ```
 
 Any valid Python logging level name (e.g., `ERROR`, `WARNING`) is accepted.
@@ -219,7 +219,7 @@ is not defined.
 
 - `BROWSERCAT_API_KEY`: BrowserCat API key for real heatmap captures (no default, simulated payloads used when unset). Get a free key at https://browsercat.xyz/mcp.
 - `BROWSERCAT_BASE_URL`: Override the BrowserCat MCP base URL (`https://server.smithery.ai/@dmaznest/browsercat-mcp-server`).
-- `DATABASE_URI`: Database connection string (`sqlite:///src/database/app.db`).
+- `DATABASE_URI`: Database connection string (`sqlite:///src/mcp_liquidation_map/database/app.db`).
 - `DEBUG`: Enable Flask debug mode when set to a truthy value (disabled by default).
 - `ENABLE_USER_API`: Opt into registering the example `/api/users` routes (disabled by default).
 - `SECRET_KEY`: Flask secret key used for session signing. Required when `DEBUG`
@@ -302,7 +302,7 @@ the `DEBUG` environment variable before starting the server:
 
 ```bash
 export DEBUG=1
-python -m src.main
+python -m mcp_liquidation_map.main
 ```
 
 This enables automatic reloading on code changes and detailed error messages.
